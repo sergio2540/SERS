@@ -160,31 +160,31 @@ public class Client {
 				chord.join(localURL, new ID(getSHA1(mac)), url);
 				
 				MyKey keyRoot = new MyKey("/");
-				MyKey keyHello = new MyKey("/hello.txt");
-				MyKey key0 = new MyKey("0");
+//				MyKey keyHello = new MyKey("/hello.txt");
+//				MyKey key0 = new MyKey("0");
 				
-				System.out.println("KEY BYTES: " + keyRoot.getBytes().length);
+//				System.out.println("KEY BYTES: " + keyRoot.getBytes().length);
 				
-				ID id = chord.getID();
-				System.out.println("ID DO CHORD: "  +  id);
-				System.out.println("ID DO CHORD: "  +  id.getLength());
+//				ID id = chord.getID();
+//				System.out.println("ID DO CHORD: "  +  id);
+//				System.out.println("ID DO CHORD: "  +  id.getLength());
 
 				try {
 					
-					String rootContent = "DIR\nhello.txt\nferias";
-					System.out.println("content " + rootContent.getBytes().length);
+					String rootContent = "DIR\n";
+//					System.out.println("content " + rootContent.getBytes().length);
 					
 					chord.insert(keyRoot, rootContent);
 					
-					String helloContent = "FILE\n" + "Hello world!".length() + "\n0";
-					System.out.println("content " + helloContent.getBytes().length);
+//					String helloContent = "FILE\n" + "Hello world!".length() + "\n0";
+//					System.out.println("content " + helloContent.getBytes().length);
 					
-					chord.insert(keyHello, helloContent);
+					//chord.insert(keyHello, helloContent);
 					
-					String zeroContent = "Hello world!";
-					System.out.println("content " + zeroContent.getBytes().length);
+//					String zeroContent = "Hello world!";
+//					System.out.println("content " + zeroContent.getBytes().length);
 					
-					chord.insert(key0, zeroContent);
+//					chord.insert(key0, zeroContent);
 				
 				} catch (Exception e) {
 					System.out.println(e.getMessage());
@@ -252,8 +252,7 @@ public class Client {
 			//chama funcao que faz download do ficheiro peers global
 		}
 		
-		Fs fs = Fs.initializeFuse(chord, "/home/pedro/Desktop/fuse" , true);
-		
+		Fs fs = Fs.initializeFuse(chord, "/home/pedro/Desktop/fuse3" , true);
 		
 	}
 

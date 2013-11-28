@@ -33,6 +33,10 @@ public class Fs extends FuseFilesystemAdapterFull {
 	private Chord chord;
 	private String path;
 	private static String content = "";
+	
+	private final int BLOCKSIZE = 1024;
+	private byte buffer[] = new byte[BLOCKSIZE];
+	private int cursorByte = 0;
 
 	public Fs() {}
 
@@ -65,7 +69,7 @@ public class Fs extends FuseFilesystemAdapterFull {
 	@Override
 	public int getattr(final String path, final StatWrapper stat) {
 
-		System.out.println("function getattr (Fs.java)");
+		System.out.println("function getattr (Fs.java) PATH: " + path);
 
 		String metaInfo[] = null;
 		String fileOrDir = "";
@@ -194,6 +198,7 @@ public class Fs extends FuseFilesystemAdapterFull {
 		}
 
 		for(int i = 1; i < metaInfo.length; i++) {
+			System.out.println(metaInfo[i]);
 			filler.add(metaInfo[i]);
 		}
 
@@ -219,12 +224,68 @@ public class Fs extends FuseFilesystemAdapterFull {
             return (int) bufSize;
     }*/
 	
-	/*
+	
 	@Override
     public int write(final String path, final ByteBuffer buf, final long bufSize, final long writeOffset, final FileInfoWrapper wrapper)
     {
+		//DEBUG
 		
-			MyKey key = new MyKey(path);
+		
+		
+		System.out.println("Path: " + path);
+		System.out.println("bufSize: " + bufSize);
+		System.out.println("writeOffset: " + writeOffset);
+
+		//cursorByte = (int) writeOffset;
+		
+		int bufferSize = (int) bufSize;
+		
+		if(buffer.length + bufSize >= BLOCKSIZE && writeOffset == cursorByte) {
+			
+			int bufCursor = 0;
+			
+			while(buffer.length < BLOCKSIZE) {
+				
+				
+				
+				buffer[cursorByte] = buf.get(bufCursor);
+				bufCursor++;
+				cursorByte++;
+				bufferSize--;			
+				
+			}
+			
+			//escrever
+			//clear ao buffer
+			cursorByte = 0;
+			
+		} else {
+				
+			
+			
+		}
+		
+		
+		
+		for(long i = 0; i < bufSize; i++) {
+			buffer[(int) i] = buf.get((int) i);
+		}
+			
+		cursorByte += bufSize;
+		
+		
+
+		if(cursorByte > buffer.length - 1) {
+			System.out.println("Buffer cheio. Enviar para a DHT");
+			
+		}
+		
+		return 0;
+		
+			//DEBUG
+		
+		
+		/*	MyKey key = new MyKey(path);
 			Set<Serializable> metaDataSet = chord.retrieve(key);
 			Metadata metaData = null;
 			for(Serializable ser : metaDataSet){
@@ -239,15 +300,27 @@ public class Fs extends FuseFilesystemAdapterFull {
 			
 			Collection<String> blockPaths = metaData.getBlocksPaths();
 			Set<Serializable> partialData = null;
-			for(String block : blockPaths){
+			for(String block : blockPaths) {
 				partialData  = chord.retrieve(new MyKey(block));
 				
 			}
 
 
     		
-            return ((MemoryFile) p).write(buf, bufSize, writeOffset);
-    }*/
+            return ((MemoryFile) p).write(buf, bufSize, writeOffset); */
+    }
+	
+	@Override
+	public int create(final String path, final ModeWrapper mode, final FileInfoWrapper info) {
+
+		
+		
+		
+		
+		
+		return 0;
+		
+	}
 
 	@Override
 	public int mkdir(final String path, final ModeWrapper mode)
@@ -329,13 +402,13 @@ public class Fs extends FuseFilesystemAdapterFull {
 					
 					newMetadata = Metadata.createMetadata(serial.toString());
 					if(newMetadata.getFiles().size() != 0)
-						return -ErrorCodes.ENOENT();//ver melhor
+//						return -ErrorCodes.ENOENT();//ver melhor
+						return 0;
 				}
 				
 
 				for(Serializable oldMetadata : dataSet) {
-					chord.remove(new MyKey(path), oldMetadata);
-					
+					chord.remove(new MyKey(path), oldMetadata);	
 				}
 				//remover primeiro chord.remove(Key, Serializable)
 
@@ -369,6 +442,13 @@ public class Fs extends FuseFilesystemAdapterFull {
 
 		return 0;
 
+	}
+	
+	@Override
+	public int access(final String path, final int access) {
+		
+		return 0;
+		
 	}
 
 }
