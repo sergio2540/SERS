@@ -36,7 +36,7 @@ public class Fs extends FuseFilesystemAdapterAssumeImplemented {
 	private Chord chord;
 	private String path;
 	private static String content = "";
-	
+
 	private final int BLOCKSIZE = 1024;
 	private byte buffer[] = new byte[BLOCKSIZE];
 	private int cursorByte = 0;
@@ -104,18 +104,18 @@ public class Fs extends FuseFilesystemAdapterAssumeImplemented {
 			stat.setMode(NodeType.FILE).size(size);
 			return 0;
 		}
-		
+
 		System.out.println("not a file or dir");
 
 		return -ErrorCodes.ENOENT();
 
 	}
-	
+
 	@Override 
 	public int open(final String path, final FileInfoWrapper info) {
 		System.out.println("open - Fs.java");
 		return 0;
-		
+
 	}
 
 	@Override
@@ -161,13 +161,13 @@ public class Fs extends FuseFilesystemAdapterAssumeImplemented {
 
 						for(int i = 2; i < metaInfo.length; i++) {
 							dataSet.addAll(chord.retrieve(new MyKey(metaInfo[i])));
-							
+
 						}
 
 						for(Serializable data : dataSet) {
 							content += data.toString();
 						}
-						
+
 						System.out.println("CONTENT ON READ: " + content);
 
 					}
@@ -215,7 +215,7 @@ public class Fs extends FuseFilesystemAdapterAssumeImplemented {
 			System.out.println("!fileOrDir.equals(DIR) - Fs.java");
 			return -1;
 		}
-		
+
 		boolean times = false;
 		int n = 0;
 
@@ -228,16 +228,16 @@ public class Fs extends FuseFilesystemAdapterAssumeImplemented {
 			}
 		}
 
-		
+
 		System.out.println("N: "+ n);
-		
-		
+
+
 		System.out.println(filler.toString());
-		
+
 		return 0;
 
 	}
-	
+
 	/*
 	private int write(final ByteBuffer buffer, final long bufSize, final long writeOffset)
     {
@@ -255,66 +255,66 @@ public class Fs extends FuseFilesystemAdapterAssumeImplemented {
             contents.position(0); // Rewind
             return (int) bufSize;
     }*/
-	
-	
-//	@Override
-//    public int write(final String path, final ByteBuffer buf, final long bufSize, final long writeOffset, final FileInfoWrapper wrapper)
-//    {
-//		//DEBUG
-//		
-//		
-//		
-//		System.out.println("Path: " + path);
-//		System.out.println("bufSize: " + bufSize);
-//		System.out.println("writeOffset: " + writeOffset);
-//
-//		//cursorByte = (int) writeOffset;
-//		
-//		int bufferSize = (int) bufSize;
-//		
-//		if(buffer.length + bufSize >= BLOCKSIZE && writeOffset == cursorByte) {
-//			
-//			int bufCursor = 0;
-//			
-//			while(buffer.length < BLOCKSIZE) {
-//				
-//				buffer[cursorByte] = buf.get(bufCursor);
-//				bufCursor++;
-//				cursorByte++;
-//				bufferSize--;			
-//				
-//			}
-//			
-//			//escrever
-//			//clear ao buffer
-//			cursorByte = 0;
-//			
-//		} else {
-//			
-//		}
-//		
-//		for(long i = 0; i < bufSize; i++) {
-//			buffer[(int) i] = buf.get((int) i);
-//		}
-//			
-//		cursorByte += bufSize;
-//		
-//		if(cursorByte > buffer.length - 1) {
-//			System.out.println("Buffer cheio. Enviar para a DHT");
-//			
-//		}
-//		
-//		return 0;
-//    }
-	
+
+
+	//	@Override
+	//    public int write(final String path, final ByteBuffer buf, final long bufSize, final long writeOffset, final FileInfoWrapper wrapper)
+	//    {
+	//		//DEBUG
+	//		
+	//		
+	//		
+	//		System.out.println("Path: " + path);
+	//		System.out.println("bufSize: " + bufSize);
+	//		System.out.println("writeOffset: " + writeOffset);
+	//
+	//		//cursorByte = (int) writeOffset;
+	//		
+	//		int bufferSize = (int) bufSize;
+	//		
+	//		if(buffer.length + bufSize >= BLOCKSIZE && writeOffset == cursorByte) {
+	//			
+	//			int bufCursor = 0;
+	//			
+	//			while(buffer.length < BLOCKSIZE) {
+	//				
+	//				buffer[cursorByte] = buf.get(bufCursor);
+	//				bufCursor++;
+	//				cursorByte++;
+	//				bufferSize--;			
+	//				
+	//			}
+	//			
+	//			//escrever
+	//			//clear ao buffer
+	//			cursorByte = 0;
+	//			
+	//		} else {
+	//			
+	//		}
+	//		
+	//		for(long i = 0; i < bufSize; i++) {
+	//			buffer[(int) i] = buf.get((int) i);
+	//		}
+	//			
+	//		cursorByte += bufSize;
+	//		
+	//		if(cursorByte > buffer.length - 1) {
+	//			System.out.println("Buffer cheio. Enviar para a DHT");
+	//			
+	//		}
+	//		
+	//		return 0;
+	//    }
+
 	@Override
 	public int write(final String path, final ByteBuffer buf, final long bufSize, final long writeOffset, final FileInfoWrapper wrapper) {
-		
-		
+
+
 		Set<Serializable> dataSet = null;
 
 		Path pathObject = FileSystems.getDefault().getPath(path);
-		
+
 
 		try {
 
@@ -327,7 +327,7 @@ public class Fs extends FuseFilesystemAdapterAssumeImplemented {
 			if(dataSet.isEmpty()) {
 				System.out.println("write dataset is empty");
 			}
-			
+
 			if(!dataSet.isEmpty()) {
 
 				MyKey key = new MyKey(pathObject.toString());
@@ -339,54 +339,54 @@ public class Fs extends FuseFilesystemAdapterAssumeImplemented {
 					chord.remove(key, oldMetadata);
 					newMetadata = Metadata.createMetadata(oldMetadata.toString());
 				}
-				
+
 				int i = 0;
 				while(i < bufSize) {
 					buffer[i] = buf.get(i);
 					i++;
 				}
-				
+
 				//trocar a funcao getSHA1 de sitio
 				String shaBuffer = new String(Client.getSHA1(new String(buffer)));
 				newMetadata.inc( (int) bufSize);
 				newMetadata.addBlock(shaBuffer);
 				System.out.println("SHA: " + shaBuffer);
 				chord.insert(key, newMetadata.getMetadata());
-				
+
 				System.out.println("metadata do ficheiro a editar: \n" + newMetadata.getMetadata());
-				
+
 				key = new MyKey(shaBuffer);
 				chord.insert(key, new String(buffer));
-				
+
 				System.out.println("Content do ficheiro: "  + new String(buffer));
 
 			} else {
 
-				
-				
+
+
 				return -1; //File already exists
 
 			}
-			
+
 		} catch(Exception e) {
 			System.out.println(e.getMessage());
 		}
-		
+
 		return (int) bufSize;
 
 	}	
 
-	
+
 	@Override
 	public int create(final String path, final ModeWrapper mode, final FileInfoWrapper info) {
 
-		
+
 		System.out.println("function create (Fs.java)");
-		
+
 		System.out.println("Path passado para a funcao create: " + path);
 
 		mode.setMode(NodeType.FILE);
-		
+
 		Set<Serializable> dataSet = null;
 
 		Path pathObject = FileSystems.getDefault().getPath(path);
@@ -409,7 +409,7 @@ public class Fs extends FuseFilesystemAdapterAssumeImplemented {
 				//remover primeiro chord.remove(Key, Serializable)
 
 				newMetadata.addFile(pathObject.getFileName().toString());
-				
+
 
 				chord.insert(key, newMetadata.getMetadata());				
 
@@ -430,8 +430,137 @@ public class Fs extends FuseFilesystemAdapterAssumeImplemented {
 		}
 
 		return 0;
+
+	}
+
+	@Override
+	public int rename(final String path, final String newName) {
+
+		System.out.println("rename - Fs.java");
+
+		Set<Serializable> dataSet1 = null;
+		Metadata newMetadata = null;
+		
+	
+		
+		Path pathObject1 = FileSystems.getDefault().getPath(path);
+		Path pathObject2 = FileSystems.getDefault().getPath(newName);
 		
 		
+		MyKey oldKey = new MyKey(pathObject1.toString());
+		MyKey oldParentKey = new MyKey(pathObject1.getParent().toString());
+		MyKey newKey = new MyKey(pathObject2.toString());
+
+		try {
+			
+			dataSet1 = chord.retrieve(new MyKey(pathObject1.toString()));
+			
+			for(Serializable oldMetadata : dataSet1) {
+				chord.remove(oldKey, oldMetadata);
+				newMetadata = Metadata.createMetadata(oldMetadata.toString());
+			}
+			
+			chord.insert(newKey, newMetadata.getMetadata());
+			
+			dataSet1 = chord.retrieve(new MyKey(pathObject1.getParent().toString()));
+			oldParentKey = new MyKey(pathObject1.getParent().toString());
+			
+			for(Serializable oldMetadata : dataSet1) {
+				chord.remove(oldParentKey, oldMetadata);
+				newMetadata = Metadata.createMetadata(oldMetadata.toString());
+			}
+			
+			newMetadata.removeFile(pathObject1.toString());
+			
+			chord.insert(oldParentKey, newMetadata.getMetadata());
+			
+			
+			
+			dataSet1 = chord.retrieve(new MyKey(pathObject2.getParent().toString()));
+			oldKey = new MyKey(pathObject2.getParent().toString());
+			
+			for(Serializable oldMetadata : dataSet1) {
+				chord.remove(oldKey, oldMetadata);
+				newMetadata = Metadata.createMetadata(oldMetadata.toString());
+			}
+			
+			chord.insert(newKey, newMetadata.getMetadata());
+			
+			
+			
+			MyKey key = new MyKey(pathObject2.getParent().toString());
+	
+			Set<Serializable> set = chord.retrieve(key);
+	
+			for(Serializable oldMetadata : set) {
+				chord.remove(key, oldMetadata);
+				newMetadata = Metadata.createMetadata(oldMetadata.toString());
+			}
+			
+			newMetadata.addFile(pathObject2.toString());
+			
+			chord.insert(key, newMetadata.getMetadata());
+			
+		
+		} catch (ServiceException e) {
+			e.printStackTrace();
+		}
+
+		return 0;
+	}
+
+	@Override
+	public int unlink(final String path) {
+
+		Set<Serializable> dataSet = null;
+
+		Path pathObject = FileSystems.getDefault().getPath(path);
+
+		try {
+
+			dataSet = chord.retrieve(new MyKey(path));
+
+			if(!dataSet.isEmpty()) {
+
+				MyKey key = new MyKey(pathObject.getParent().toString());
+
+				Set<Serializable> set = chord.retrieve(key);
+				Metadata newMetadata = null;
+
+				for(Serializable oldMetadata : set) {
+					chord.remove(key, oldMetadata);
+					newMetadata = Metadata.createMetadata(oldMetadata.toString());
+				}
+				//remover primeiro chord.remove(Key, Serializable)
+
+				newMetadata.removeFile(pathObject.getFileName().toString());
+				chord.insert(key, newMetadata.getMetadata());				
+
+				key = new MyKey(path);
+
+				Metadata content = Metadata.createMetadata(MetadataType.FILE.name() + "\n");
+
+				for(String block : content.getBlocksPaths()) {
+					for(Serializable sr : chord.retrieve(new MyKey(block))) { 
+						chord.remove(new MyKey(block), sr);
+					}
+				}
+
+				for(Serializable sr : dataSet) {
+					chord.remove(key, sr);
+				}
+
+			} else {
+
+				return -1; //File already exists
+			}
+
+		} catch(Exception e) {
+			System.out.println(e.getMessage());
+		}
+
+		return 0;
+
 	}
 
 	@Override
@@ -495,44 +624,44 @@ public class Fs extends FuseFilesystemAdapterAssumeImplemented {
 		Set<Serializable> dataSet = null;
 
 		Path pathObject = FileSystems.getDefault().getPath(path);
-		
+
 		System.out.println("pathObject: " + path);
 		//System.out.println("Path: " + pathObject.toString());
 
 		try {
-			
+
 			Metadata newMetadata = null;
-			
+
 			dataSet = chord.retrieve(new MyKey(path));
-			
+
 
 			if(!dataSet.isEmpty()) {//se criarmos e removermos uma hierarquia, se criarmos de novo a pasta a hierarquia ainda existe
-			
+
 				int i = 0;
 				for (Serializable serial : dataSet) {
-					
+
 					System.out.println("dataset" + i + " " + serial.toString());
 					i++;
-					
+
 					newMetadata = Metadata.createMetadata(serial.toString());
 					if(newMetadata.getFiles().size() != 0) {
-//						return -ErrorCodes.ENOENT();//ver melhor
+						//						return -ErrorCodes.ENOENT();//ver melhor
 						return 0;
 					}
 				}
-				
+
 				for(Serializable oldMetadata : dataSet) {
 					chord.remove(new MyKey(path), oldMetadata);	
 				}
 				//remover primeiro chord.remove(Key, Serializable)
 
 				//newMetadata.addDir(pathObject.getFileName().toString());
-				
+
 				MyKey key = new MyKey(pathObject.getParent().toString());
 				System.out.println(">>>>>>>" + pathObject.getParent().toString());
 
 				Set<Serializable> set = chord.retrieve(key);
-				
+
 				for(Serializable tempSet : set) {
 					chord.remove(key, tempSet);
 					newMetadata = Metadata.createMetadata(tempSet.toString());
@@ -541,7 +670,7 @@ public class Fs extends FuseFilesystemAdapterAssumeImplemented {
 				newMetadata.rmDir(pathObject.getFileName().toString());
 
 				chord.insert(key, newMetadata.getMetadata());				
-				
+
 
 
 			} else {
@@ -557,12 +686,12 @@ public class Fs extends FuseFilesystemAdapterAssumeImplemented {
 		return 0;
 
 	}
-	
+
 	@Override
 	public int access(final String path, final int access) {
-		
+
 		return 0;
-		
+
 	}
 
 }

@@ -252,7 +252,7 @@ public class Client {
 			//chama funcao que faz download do ficheiro peers global
 		}
 		
-		Fs fs = Fs.initializeFuse(chord, "/home/pedro/Desktop/fuse" , true);
+		Fs fs = Fs.initializeFuse(chord, "/home/pedro/Desktop/fuse2" , true);
 		
 	}
 

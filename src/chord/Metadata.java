@@ -115,23 +115,23 @@ public class Metadata {
 	}
 
 	public void rmDir(String dirToRemove) {
-		boolean bool = this.files.remove(dirToRemove);
-		if(bool)
-			System.out.println("TRUE!");
+		this.files.remove(dirToRemove);
 	}
 
 	public void addFile(String fileToAdd) {
-		boolean bool = this.files.add(fileToAdd);
-		if(bool) {
-			System.out.println("File name added to parent metadata!");
-		}
+		this.files.add(fileToAdd);
+	}
+	
+	public void removeFile(String fileToRemove) {
+		this.files.remove(fileToRemove);
 	}
 	
 	public void addBlock(String hash) {
-		boolean bool = this.blockPaths.add(hash);	
-		if(bool) {
-			System.out.println("Block added to file metadata!");
-		}
+		this.blockPaths.add(hash);	
+	}
+	
+	public void removeBlock(String hash) {
+		this.blockPaths.remove(hash);	
 	}
 	
 	public void inc(int size) {
