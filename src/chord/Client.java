@@ -33,7 +33,7 @@ public class Client {
 	static int HIGHPORT = 49151;
 	static int LOWPORT = 1024;
 	
-	private static byte[] getSHA1(String username) {
+	public static byte[] getSHA1(String username) {
 		String sha1;
 		
 		MessageDigest mDigest = null;
@@ -252,7 +252,7 @@ public class Client {
 			//chama funcao que faz download do ficheiro peers global
 		}
 		
-		Fs fs = Fs.initializeFuse(chord, "/home/pedro/Desktop/fuse3" , true);
+		Fs fs = Fs.initializeFuse(chord, "/home/pedro/Desktop/fuse" , true);
 		
 	}
 
