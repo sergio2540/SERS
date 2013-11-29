@@ -372,7 +372,7 @@ public class Fs extends FuseFilesystemAdapterAssumeImplemented {
 			System.out.println(e.getMessage());
 		}
 		
-		return 0;
+		return (int) bufSize;
 
 	}	
 
