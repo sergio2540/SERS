@@ -123,7 +123,7 @@ public class Metadata {
 	public void addFile(String fileToAdd) {
 		boolean bool = this.files.add(fileToAdd);
 		if(bool) {
-			System.out.println("File name removed from parent metadata!");
+			System.out.println("File name added to parent metadata!");
 		}
 	}
 	
@@ -132,6 +132,14 @@ public class Metadata {
 		if(bool) {
 			System.out.println("Block added to file metadata!");
 		}
+	}
+	
+	public void inc(int size) {
+		this.size += size;		
+	}
+	
+	public void dec(int size) {
+		this.size -= size;
 	}
 
 }

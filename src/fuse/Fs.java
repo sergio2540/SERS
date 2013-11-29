@@ -348,6 +348,7 @@ public class Fs extends FuseFilesystemAdapterAssumeImplemented {
 				
 				//trocar a funcao getSHA1 de sitio
 				String shaBuffer = new String(Client.getSHA1(new String(buffer)));
+				newMetadata.inc( (int) bufSize);
 				newMetadata.addBlock(shaBuffer);
 				System.out.println("SHA: " + shaBuffer);
 				chord.insert(key, newMetadata.getMetadata());
@@ -361,12 +362,14 @@ public class Fs extends FuseFilesystemAdapterAssumeImplemented {
 
 			} else {
 
+				
+				
 				return -1; //File already exists
 
 			}
 			
 		} catch(Exception e) {
-			
+			System.out.println(e.getMessage());
 		}
 		
 		return 0;
