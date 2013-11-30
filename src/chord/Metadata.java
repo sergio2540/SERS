@@ -127,7 +127,18 @@ public class Metadata {
 	}
 	
 	public void addBlock(String hash) {
+		
 		this.blockPaths.add(hash);	
+	
+	}
+	
+	public void updateBlock(int index, String hash) {
+		
+		ArrayList<String> temp = (ArrayList<String>) this.blockPaths;
+		temp.set(index, hash);
+		
+		
+	
 	}
 	
 	public void removeBlock(String hash) {

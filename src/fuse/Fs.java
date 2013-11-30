@@ -5,8 +5,10 @@ import java.io.Serializable;
 import java.nio.ByteBuffer;
 import java.nio.file.FileSystems;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Set;
 
 import chord.Metadata;
@@ -25,7 +27,6 @@ import net.fusejna.types.TypeMode.ModeWrapper;
 import net.fusejna.types.TypeMode.NodeType;
 import net.fusejna.util.FuseFilesystemAdapterAssumeImplemented;
 import net.fusejna.util.FuseFilesystemAdapterFull;
-
 import chord.Client;
 
 
@@ -137,6 +138,8 @@ public class Fs extends FuseFilesystemAdapterAssumeImplemented {
 
 			try {
 
+				Collection<Serializable> list = new ArrayList<Serializable>();
+				
 				Set<Serializable> dataSet = null;
 				dataSet = chord.retrieve(new MyKey(path));
 
@@ -152,7 +155,7 @@ public class Fs extends FuseFilesystemAdapterAssumeImplemented {
 						fileOrDir = metaInfo[0];
 					}
 
-					dataSet.clear();
+					//dataSet.clear();
 
 					if(fileOrDir.equals("DIR")) {
 						System.out.println("function read - Fs.java");
@@ -160,11 +163,11 @@ public class Fs extends FuseFilesystemAdapterAssumeImplemented {
 					} else if(fileOrDir.equals("FILE")) {
 
 						for(int i = 2; i < metaInfo.length; i++) {
-							dataSet.addAll(chord.retrieve(new MyKey(metaInfo[i])));
+							list.addAll(chord.retrieve(new MyKey(metaInfo[i])));
 
 						}
 
-						for(Serializable data : dataSet) {
+						for(Serializable data : list) {
 							content += data.toString();
 						}
 
@@ -309,67 +312,143 @@ public class Fs extends FuseFilesystemAdapterAssumeImplemented {
 
 	@Override
 	public int write(final String path, final ByteBuffer buf, final long bufSize, final long writeOffset, final FileInfoWrapper wrapper) {
-
-
+		
+		//bufsize = 1048
+		//writeoffset= 2100
+		
+		System.out.println("bufSize: " + bufSize + "writeOffSet: " + writeOffset);
+		
+		//2100/1024 = indice 2 bloco
+		int beginOffSet = (int) writeOffset/BLOCKSIZE;
+		
+		// (1048 + 2100) /1024 = indice 3 bloco
+		int endOffSet = (int ) ((bufSize + writeOffset) / BLOCKSIZE);
+		
+		
+		//2100%1024 = 52 bytes correctos
+		int cursorStartByte = (int) writeOffset % BLOCKSIZE;
+		
+		//(2100 + 1048) % 1024 = 76 
+		//(2100 + 1048) = 3148 escrever ate 3148
+		int cursorEndByte = (int) (bufSize + writeOffset);
+		
+		
+		//path = hello.txt
+		MyKey fileKey = new MyKey(path);
+		
 		Set<Serializable> dataSet = null;
-
-		Path pathObject = FileSystems.getDefault().getPath(path);
-
-
+		 
 		try {
+		
+			dataSet = chord.retrieve(fileKey);
+		
+			Metadata fileMetadata = null;
+		
+		Path pathObject = FileSystems.getDefault().getPath(path);
+		
+		for(Serializable metadata : dataSet){
+			
+			fileMetadata = Metadata.createMetadata(metadata.toString());
+		}
 
-			dataSet = chord.retrieve(new MyKey(path));
+		ArrayList<String> blocks = (ArrayList<String>) fileMetadata.getBlocksPaths();//-------------------sapateiro
 
-			if(!dataSet.isEmpty()) { 
-				System.out.println("write dataset is not empty");
-			}
-
-			if(dataSet.isEmpty()) {
-				System.out.println("write dataset is empty");
-			}
-
-			if(!dataSet.isEmpty()) {
-
-				MyKey key = new MyKey(pathObject.toString());
-
-				Set<Serializable> set = chord.retrieve(key);
-				Metadata newMetadata = null;
-
-				for(Serializable oldMetadata : set) {
-					chord.remove(key, oldMetadata);
-					newMetadata = Metadata.createMetadata(oldMetadata.toString());
+		int bufIndex = 0;
+		
+		//2 .. 3
+		for(int blockNo = beginOffSet; blockNo <= endOffSet; blockNo++){
+		
+			System.out.println("Block nº: " + blockNo);
+		
+			String content = null;
+			
+			System.out.println("\n----antes-----block\n");
+			String block = blocks.get(blockNo);
+			System.out.println("\n----depois-----block\n");
+			
+			System.out.println("\n-----------------------------------retrieve--antes----------\n");
+			Set<Serializable> data = chord.retrieve(new MyKey(block));
+			System.out.println("\n--------------------------------retrieve--depois-----------------\n");
+			
+			if(!data.isEmpty()) {
+				System.out.println("data is not empty");
+			
+				for(Serializable ser : data) {
+					content += ser.toString();
 				}
-
-				int i = 0;
-				while(i < bufSize) {
-					buffer[i] = buf.get(i);
-					i++;
+				
+				byte oldBuffer[] = content.getBytes();
+				
+				for(int index = 0 ;index < BLOCKSIZE; index++){
+					buffer[index] = oldBuffer[index];
 				}
+				
+			}
+			
+			System.out.println("cursor byte: " + cursorStartByte);
+			System.out.println("bufIndex: " + bufIndex);
+			System.out.println("bufsize: " + bufSize);
+			
+			for (int index = cursorStartByte, index2 = bufIndex; index2 < bufSize; index++, index2++) {
+				
+				System.out.println("cursor byte: " + cursorStartByte);
+				System.out.println("bufsize: " + bufSize);
+				
+				if(index == BLOCKSIZE){			
+					System.out.println("index == BLOCKSIZE");
+					cursorStartByte = 0;
+					bufIndex = index2;
+					break;
+				}
+				
+				
+				buffer[index] = buf.get(index2);
+			}
+			
+			//Hash
+			//escrever para a dht
+			System.out.println("Bloco adicionado à dht (chegou ao fim de buffer)");
 
-				//trocar a funcao getSHA1 de sitio
-				String shaBuffer = new String(Client.getSHA1(new String(buffer)));
-				newMetadata.inc( (int) bufSize);
-				newMetadata.addBlock(shaBuffer);
-				System.out.println("SHA: " + shaBuffer);
-				chord.insert(key, newMetadata.getMetadata());
+		
 
-				System.out.println("metadata do ficheiro a editar: \n" + newMetadata.getMetadata());
+			MyKey key = new MyKey(pathObject.toString());
 
-				key = new MyKey(shaBuffer);
-				chord.insert(key, new String(buffer));
+			Set<Serializable> set = chord.retrieve(key);
+			Metadata newMetadata = null;
+			
+			//update nova metadata
+			for(Serializable oldMetadata : set) {
+				chord.remove(key, oldMetadata);
+				newMetadata = Metadata.createMetadata(oldMetadata.toString());
+			}
+			
 
-				System.out.println("Content do ficheiro: "  + new String(buffer));
+			//trocar a funcao getSHA1 de sitio
+			String shaBuffer = new String(Client.getSHA1(new String(buffer)));
+			
+			newMetadata.inc(new String(buffer).trim().length());
+			
+			newMetadata.updateBlock(blockNo, shaBuffer);
+			
+			System.out.println("SHA: " + shaBuffer);
+			chord.insert(key, newMetadata.getMetadata());
+			
+			
 
-			} else {
+			System.out.println("metadata do ficheiro a editar: \n" + newMetadata.getMetadata());
 
+			
+			//insere bloco
+			key = new MyKey(shaBuffer);
+			chord.insert(key, new String(buffer));
 
-
-				return -1; //File already exists
-
+			System.out.println("Content do ficheiro: "  + new String(buffer));
+			
+			
 			}
 
 		} catch(Exception e) {
-			System.out.println(e.getMessage());
+			System.out.println("ERRO-----" + e.getMessage());
 		}
 
 		return (int) bufSize;

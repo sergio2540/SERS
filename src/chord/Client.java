@@ -160,8 +160,10 @@ public class Client {
 				chord.join(localURL, new ID(getSHA1(mac)), url);
 				
 				MyKey keyRoot = new MyKey("/");
-//				MyKey keyHello = new MyKey("/hello.txt");
-//				MyKey key0 = new MyKey("0");
+				MyKey keyHello = new MyKey("/hello.txt");
+				MyKey key0 = new MyKey("0");
+				MyKey key1 = new MyKey("1");
+				MyKey key2 = new MyKey("2");
 				
 //				System.out.println("KEY BYTES: " + keyRoot.getBytes().length);
 				
@@ -171,20 +173,29 @@ public class Client {
 
 				try {
 					
-					String rootContent = "DIR\n";
+					String rootContent = "DIR\nhello.txt";
 //					System.out.println("content " + rootContent.getBytes().length);
 					
 					chord.insert(keyRoot, rootContent);
 					
-//					String helloContent = "FILE\n" + "Hello world!".length() + "\n0";
+					String content0 = "0\n";
+					String content1 = "1\n";
+					String content2 = "2\n";
+					
+					int size = content0.length() + content1.length() + content2.length();
+					
+					String helloContent = "FILE\n" + size +  "\n0\n1\n2\n";
 //					System.out.println("content " + helloContent.getBytes().length);
 					
-					//chord.insert(keyHello, helloContent);
+					chord.insert(keyHello, helloContent);
 					
-//					String zeroContent = "Hello world!";
+				
+					
 //					System.out.println("content " + zeroContent.getBytes().length);
 					
-//					chord.insert(key0, zeroContent);
+					chord.insert(key0, content0);
+					chord.insert(key1, content1);
+					chord.insert(key2, content2);
 				
 				} catch (Exception e) {
 					System.out.println(e.getMessage());
@@ -252,7 +263,7 @@ public class Client {
 			//chama funcao que faz download do ficheiro peers global
 		}
 		
-		Fs fs = Fs.initializeFuse(chord, "/home/pedro/Desktop/fuse2" , true);
+		Fs fs = Fs.initializeFuse(chord, "/home/pedro/Desktop/fuse2" , false);
 		
 	}
 
