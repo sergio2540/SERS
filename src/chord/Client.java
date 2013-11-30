@@ -48,6 +48,19 @@ public class Client {
 		
 	}
 	
+    final protected static char[] hexArray = "0123456789ABCDEF".toCharArray();
+	
+	public static String bytesToHex(byte[] bytes) {
+	    char[] hexChars = new char[bytes.length * 2];
+	    int v;
+	    for ( int j = 0; j < bytes.length; j++ ) {
+	        v = bytes[j] & 0xFF;
+	        hexChars[j * 2] = hexArray[v >>> 4];
+	        hexChars[j * 2 + 1] = hexArray[v & 0x0F];
+	    }
+	    return new String(hexChars);
+	}
+	
 	private static String getMacAdress() {
 
 		InetAddress ip;
@@ -160,10 +173,15 @@ public class Client {
 				chord.join(localURL, new ID(getSHA1(mac)), url);
 				
 				MyKey keyRoot = new MyKey("/");
-				MyKey keyHello = new MyKey("/hello.txt");
-				MyKey key0 = new MyKey("0");
-				MyKey key1 = new MyKey("1");
-				MyKey key2 = new MyKey("2");
+//				MyKey keyHello = new MyKey("/hello.txt");
+//				MyKey key0 = new MyKey("0");
+//				MyKey key1 = new MyKey("1");
+//				MyKey key2 = new MyKey("2");
+				
+				
+				MyKey adminKey = new MyKey("/admin");
+				String adminContent = "DIR\n";
+				chord.insert(adminKey, adminContent);
 				
 //				System.out.println("KEY BYTES: " + keyRoot.getBytes().length);
 				
@@ -173,29 +191,29 @@ public class Client {
 
 				try {
 					
-					String rootContent = "DIR\nhello.txt";
+					String rootContent = "DIR\n";
 //					System.out.println("content " + rootContent.getBytes().length);
 					
 					chord.insert(keyRoot, rootContent);
 					
-					String content0 = "0\n";
-					String content1 = "1\n";
-					String content2 = "2\n";
+//					String content0 = "0\n";
+//					String content1 = "1\n";
+//					String content2 = "2\n";
 					
-					int size = content0.length() + content1.length() + content2.length();
+//					int size = content0.length() + content1.length() + content2.length();
 					
-					String helloContent = "FILE\n" + size +  "\n0\n1\n2\n";
+//					String helloContent = "FILE\n" + size +  "\n0\n1\n2\n";
 //					System.out.println("content " + helloContent.getBytes().length);
 					
-					chord.insert(keyHello, helloContent);
+//					chord.insert(keyHello, helloContent);
 					
 				
 					
 //					System.out.println("content " + zeroContent.getBytes().length);
 					
-					chord.insert(key0, content0);
-					chord.insert(key1, content1);
-					chord.insert(key2, content2);
+//					chord.insert(key0, content0);
+//					chord.insert(key1, content1);
+//					chord.insert(key2, content2);
 				
 				} catch (Exception e) {
 					System.out.println(e.getMessage());
@@ -246,9 +264,7 @@ public class Client {
 				return;
 				
 			} catch (ServiceException e) {
-				System.out.println("h");
 				System.out.println(e.getMessage());
-			
 			}
 			
 		} else {
@@ -269,7 +285,7 @@ public class Client {
 			//chama funcao que faz download do ficheiro peers global
 		}
 		
-		Fs fs = Fs.initializeFuse(chord, "/home/pedro/Desktop/fuse" , false);
+		Fs fs = Fs.initializeFuse(chord, "/home/pedro/Desktop/fuse2" , false);
 		
 	}
 

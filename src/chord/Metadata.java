@@ -141,9 +141,12 @@ public class Metadata {
 		
 		if(index < this.blockPaths.size()) {
 			temp.set(index, hash);
+			
 		} else {
 			addBlock(hash);
 		}
+		
+		
 		
 	}
 	
