@@ -9,6 +9,10 @@ public class Metadata {
 	private Collection<String> files;
 	private int size;
 	private Collection<String> blockPaths;
+	
+
+	// TODO: BLOCKSIZE REPETIDO MUDAR ISTO
+	private final int BLOCKSIZE = 1024; 
 
 	public Metadata(MetadataType type, Collection<String> files, int size, Collection<String> blockPaths){
 		this.metadataType = type;
@@ -85,7 +89,6 @@ public class Metadata {
 		if(this.getMetadataType() == MetadataType.DIR) {
 			metadata.append("\n");
 			for(String file : this.getFiles()) {
-				metadata.append("/");
 				metadata.append(file);
 				metadata.append("\n");
 			}
@@ -115,7 +118,7 @@ public class Metadata {
 	}
 
 	public void rmDir(String dirToRemove) {
-		this.files.remove(dirToRemove);
+		this.files.remove(dirToRemove);	
 	}
 
 	public void addFile(String fileToAdd) {
@@ -135,10 +138,13 @@ public class Metadata {
 	public void updateBlock(int index, String hash) {
 		
 		ArrayList<String> temp = (ArrayList<String>) this.blockPaths;
-		temp.set(index, hash);
 		
+		if(index < this.blockPaths.size()) {
+			temp.set(index, hash);
+		} else {
+			addBlock(hash);
+		}
 		
-	
 	}
 	
 	public void removeBlock(String hash) {
@@ -149,10 +155,6 @@ public class Metadata {
 		this.size += size;		
 	}
 	
-	public void dec(int size) {
-		this.size -= size;
-	}
-
 }
 
 

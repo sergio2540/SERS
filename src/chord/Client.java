@@ -239,7 +239,12 @@ public class Client {
 		if(alivePeers == 0){
 			
 			try {
+				
 				chord.create(localURL, new ID(getSHA1(mac)));
+				peersFile.prependPeerToPeerList(localURL);
+				peersFile.save();
+				return;
+				
 			} catch (ServiceException e) {
 				System.out.println("h");
 				System.out.println(e.getMessage());
@@ -256,6 +261,7 @@ public class Client {
 		peersFile.save();
 		
 		
+		
 		//verfica se tem que ir buscar mais ips ao "DNS"
 		if((2/3) * N > alivePeers) {
 				
@@ -263,7 +269,7 @@ public class Client {
 			//chama funcao que faz download do ficheiro peers global
 		}
 		
-		Fs fs = Fs.initializeFuse(chord, "/home/pedro/Desktop/fuse2" , false);
+		Fs fs = Fs.initializeFuse(chord, "/home/pedro/Desktop/fuse" , false);
 		
 	}
 
