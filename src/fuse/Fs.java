@@ -39,6 +39,8 @@ public class Fs extends FuseFilesystemAdapterAssumeImplemented {
 	private Chord chord;
 	private String path;
 	
+	private gossip.Client gossipClient;
+	
 	//private static String content = "";
 
 	private final int BLOCKSIZE = 1024;
@@ -51,6 +53,8 @@ public class Fs extends FuseFilesystemAdapterAssumeImplemented {
 	private Fs(Chord chord, String path) {
 		this.chord = chord;
 		this.path = path;
+		this.gossipClient = new gossip.Client(chord);
+		
 	}   
 
 	public static Fs initializeFuse(Chord chord, String path, boolean debug) {
@@ -68,6 +72,8 @@ public class Fs extends FuseFilesystemAdapterAssumeImplemented {
 		} catch (FuseException e) {
 			e.printStackTrace();
 		}
+		
+		
 
 		return fs;
 
@@ -286,6 +292,7 @@ public class Fs extends FuseFilesystemAdapterAssumeImplemented {
 
 			for(Serializable metadata : fileSet) {
 				fileMetadata = Metadata.createMetadata(metadata.toString());
+				System.out.println("Inicio metadata do ficheiro: \n" + fileMetadata.getMetadata());
 			}
 
 			ArrayList<String> blocks = (ArrayList<String>) fileMetadata.getBlocksPaths();//-------------------sapateiro
@@ -326,7 +333,7 @@ public class Fs extends FuseFilesystemAdapterAssumeImplemented {
 						
 						
 						for(Serializable ser : data) {
-							System.out.println("removeu data anterior" + block);
+							System.out.println("-------------------------removeu data anterior" + block);
 							chord.remove(new MyKey(block), ser);
 						}
 
@@ -354,18 +361,18 @@ public class Fs extends FuseFilesystemAdapterAssumeImplemented {
 					//byteBuffer.put(index, buf.get(index2));
 				}
 				
-				
-//				MyKey key = new MyKey(path);
-//				Set<Serializable> set = chord.retrieve(key);
+			
 				Metadata newMetadata = null;
-
-				//update nova metadata
+				
+				fileSet = chord.retrieve(fileKey);
+				
 				for(Serializable oldMetadata : fileSet) {
 					chord.remove(fileKey, oldMetadata);
 					newMetadata = Metadata.createMetadata(oldMetadata.toString());
+					System.out.println("Inicio metadata do ficheiro: \n" + fileMetadata.getMetadata());
 				}
-				
-				
+
+			
 				
 
 				// TODO: trocar isto
@@ -385,7 +392,7 @@ public class Fs extends FuseFilesystemAdapterAssumeImplemented {
 				System.out.println("SHA: " + shaBuffer);
 				chord.insert(fileKey, newMetadata.getMetadata());
 
-				System.out.println("metadata do ficheiro a editar: \n" + newMetadata.getMetadata());
+				System.out.println("Nova metadata do ficheiro: \n" + newMetadata.getMetadata());
 
 				//insere bloco
 				MyKey key = new MyKey(shaBuffer);
@@ -395,6 +402,8 @@ public class Fs extends FuseFilesystemAdapterAssumeImplemented {
 
 
 				System.out.println("Content do ficheiro: "  + new String(buffer));
+				
+				this.gossipClient.getEntriesById();
 
 			}
 
@@ -416,7 +425,7 @@ public class Fs extends FuseFilesystemAdapterAssumeImplemented {
 
 		System.out.println("function create (Fs.java)");
 
-		System.out.println("Path passado para a funcao create: " + path);
+		System.out.println("-------------------------------__>Path passado para a funcao create: " + path);
 
 		mode.setMode(NodeType.FILE);
 

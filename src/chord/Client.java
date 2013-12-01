@@ -70,9 +70,7 @@ public class Client {
 			try {
 				
 			ip = InetAddress.getLocalHost();
-			
 			//System.out.println("Current IP address : " + ip.getHostAddress());
-			
 			Enumeration<NetworkInterface> nets = NetworkInterface.getNetworkInterfaces();
 			NetworkInterface netint;
 			List<InterfaceAddress> interfaces = new ArrayList<InterfaceAddress>();
@@ -84,7 +82,6 @@ public class Client {
 
 			//for(InterfaceAddress intAddr : interfaces){
 			//	System.out.println("| " + intAddr.toString() + " |");
-				
 			//}
 			
 			ip = InetAddress.getByAddress(interfaces.get(1).getAddress().getAddress());
@@ -119,8 +116,6 @@ public class Client {
 		Random random = new Random();
 		//numero entre 1 e higher
 		int port = lower + random.nextInt(higher - lower) + 1;
-		//Debug
-		//System.out.println("lower: " + lower + " higher: " + higher + " num: " + num);
 		System.out.println("Random port: " + port);
 		return port;
 		
@@ -136,9 +131,25 @@ public class Client {
 		String userHome = System.getProperty("user.home");
 		Collection<URL> peersList;
 		Collection<URL> peersToBeRemoved = new ArrayList<URL>();
+		
 
 		PeersFile peersFile = new PeersFile("https://dl.dropboxusercontent.com/u/23827391/peers", "peers");
 		peersList = peersFile.getPeersList();
+		
+		if(args[0] == null && args[1] == null) {
+			System.out.println("Argumentos inválidos!");
+			return;
+		}
+		
+		MyKey usersKey = new MyKey("/admin/usersKey");
+		MyKey activeUsersKey = new MyKey("/admin/activeUsersKey");
+		MyKey duplicatedActiveUsersKey = new MyKey("/admin/duplicatedActiveUsersKey");
+		
+		String username = args[0];
+		String folder = args[1];
+		
+		System.out.println("USERNAME: " + "|" + args[0] + "|");
+		System.out.println("FOLDER: " + "|" + args[1] + "|");
 
 		PropertiesLoader.loadPropertyFile();
 		int countFailedChordConnections = 0;
@@ -165,55 +176,43 @@ public class Client {
 		if(peersList.isEmpty()) {
 			System.out.println("PeersList empty!");
 		}
+
+		MyKey keyRoot = new MyKey("/");
+		
+		if(username.equals("admin")) {
+	
+			
+				System.out.println("ADMIN CREATED");
+				String usersContent = username;
+				String rootContent = "DIR\n";
+				//chord.insert(keyRoot, rootContent);
+				//chord.insert(usersKey, usersContent);
+				System.out.println("Insert executed!");
+			}
 		
 		for(URL url : peersList) {
 			try {
 				
 				System.out.println("LOCALUTL: " + localURL + " , URL: " + url);
+				System.out.println("users");
 				chord.join(localURL, new ID(getSHA1(mac)), url);
-				
-				MyKey keyRoot = new MyKey("/");
-//				MyKey keyHello = new MyKey("/hello.txt");
-//				MyKey key0 = new MyKey("0");
-//				MyKey key1 = new MyKey("1");
-//				MyKey key2 = new MyKey("2");
-				
-				
-				MyKey adminKey = new MyKey("/admin");
-				String adminContent = "DIR\n";
-				chord.insert(adminKey, adminContent);
-				
-//				System.out.println("KEY BYTES: " + keyRoot.getBytes().length);
-				
-//				ID id = chord.getID();
-//				System.out.println("ID DO CHORD: "  +  id);
-//				System.out.println("ID DO CHORD: "  +  id.getLength());
 
 				try {
-					
-					String rootContent = "DIR\n";
-//					System.out.println("content " + rootContent.getBytes().length);
-					
-					chord.insert(keyRoot, rootContent);
-					
-//					String content0 = "0\n";
-//					String content1 = "1\n";
-//					String content2 = "2\n";
-					
-//					int size = content0.length() + content1.length() + content2.length();
-					
-//					String helloContent = "FILE\n" + size +  "\n0\n1\n2\n";
-//					System.out.println("content " + helloContent.getBytes().length);
-					
-//					chord.insert(keyHello, helloContent);
-					
 				
+						chord.insert(usersKey, username);
+						
+						Set<Serializable> usersData = chord.retrieve(usersKey);
+						StringBuilder users = new StringBuilder();
+						System.out.println("number of elements in users data: " + usersData.size());
+						for(Serializable ser : usersData) {
+							System.out.println("number of users: " + i);
+							users.append(ser.toString());
+							users.append("\n");
+						}
+						
+						System.out.println(users.toString());
+						
 					
-//					System.out.println("content " + zeroContent.getBytes().length);
-					
-//					chord.insert(key0, content0);
-//					chord.insert(key1, content1);
-//					chord.insert(key2, content2);
 				
 				} catch (Exception e) {
 					System.out.println(e.getMessage());
@@ -230,7 +229,7 @@ public class Client {
 						String s = (String) it.next();
 						
 						
-						System.out.println("Retrieve:---------------------------------"+s);
+						System.out.println("Retrieve:------------"+s);
 
 					}
 
@@ -259,8 +258,10 @@ public class Client {
 			try {
 				
 				chord.create(localURL, new ID(getSHA1(mac)));
+				System.out.println("Create executed!");
 				peersFile.prependPeerToPeerList(localURL);
 				peersFile.save();
+
 				return;
 				
 			} catch (ServiceException e) {
@@ -285,7 +286,8 @@ public class Client {
 			//chama funcao que faz download do ficheiro peers global
 		}
 		
-		Fs fs = Fs.initializeFuse(chord, "/home/pedro/Desktop/fuse2" , false);
+		Fs fs = Fs.initializeFuse(chord, folder, false);
+		
 		
 	}
 
