@@ -205,7 +205,6 @@ public class Client {
 						StringBuilder users = new StringBuilder();
 						System.out.println("number of elements in users data: " + usersData.size());
 						for(Serializable ser : usersData) {
-							System.out.println("number of users: " + i);
 							users.append(ser.toString());
 							users.append("\n");
 						}
