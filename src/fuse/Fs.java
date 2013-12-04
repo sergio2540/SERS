@@ -730,5 +730,12 @@ public class Fs extends FuseFilesystemAdapterAssumeImplemented {
 		return 0;
 
 	}
-
+	
+	@Override
+	public void afterUnmount(final File mountPoint) {
+		mountPoint.delete();
+	}
+	
+	
+	
 }
