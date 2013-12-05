@@ -11,12 +11,16 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import chord.Metadata;
 import chord.MetadataType;
 import chord.MyKey;
+import de.uniba.wiai.lspi.chord.com.Entry;
+import de.uniba.wiai.lspi.chord.com.Node;
 import de.uniba.wiai.lspi.chord.data.ID;
+import de.uniba.wiai.lspi.chord.data.URL;
 import de.uniba.wiai.lspi.chord.service.Chord;
 import de.uniba.wiai.lspi.chord.service.ServiceException;
 import de.uniba.wiai.lspi.chord.service.impl.ChordImpl;
@@ -611,6 +615,14 @@ public class Fs extends FuseFilesystemAdapterAssumeImplemented {
 	{
 
 		System.out.println("function mkdir (Fs.java)");
+		
+		System.out.println("PREDECESSOR: " + ((ChordImpl) chord).printPredecessor());
+		System.out.println("------------------------------------------------");
+		
+		
+		System.out.println("SUCCESSOR: " + ((ChordImpl) chord).printSuccessorList());
+		System.out.println("------------------------------------------------");
+		
 
 		mode.setMode(NodeType.DIRECTORY, true, true, true, true, true, true, true, true, true);
 		Set<Serializable> dataSet = null;
@@ -653,7 +665,39 @@ public class Fs extends FuseFilesystemAdapterAssumeImplemented {
 		} catch (ServiceException e) {
 			e.printStackTrace();
 		}
+		
+		System.out.println("------------------------------BYTES------------------------------------");
 
+		int bytes = 0;
+		for (Map.Entry<ID, Set<Entry>> entry : ((ChordImpl) chord).getEntries().getEntries().entrySet()) {
+			
+			
+			for (Entry setEntry : entry.getValue()) {
+				System.out.print("|" + setEntry.getValue().toString() + "|");
+				bytes += setEntry.getValue().toString().getBytes().length;
+			}
+			
+		}
+		
+		System.out.println("BYTES: " + bytes);
+		System.out.println("------------------------------------------------------------------");
+		
+		
+		System.out.println("---------------------------SUCESSSORS AND PREDECESSOR---------------------------------");
+
+		URL url = ((ChordImpl) chord).getReferences().getPredecessor().getNodeURL();
+		System.out.println("URL(P): " + url.getHost() + ":" + url.getPort());
+		
+		
+		for(Node node : ((ChordImpl) chord).getReferences().getSuccessors()) {
+			
+			System.out.println("URL(S)" + node.getNodeURL().getHost() + ":" + node.getNodeURL().getPort()); 
+			
+		}
+		
+		System.out.println("------------------------------------------------------------------");
+
+		
 		return 0;
 
 	}

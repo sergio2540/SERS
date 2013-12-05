@@ -14,11 +14,14 @@ import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Enumeration;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 
+import de.uniba.wiai.lspi.chord.com.Entry;
 import de.uniba.wiai.lspi.chord.console.command.Retrieve;
 import de.uniba.wiai.lspi.chord.data.ID;
 import de.uniba.wiai.lspi.chord.data.URL;
@@ -136,14 +139,15 @@ public class Client {
 		MyKey keyRoot = new MyKey("/");
 		String keyRootContent = "DIR\n";
 		
-		//MyKey usersKey = new MyKey("/admin/usersKey");
+		MyKey usersKey = new MyKey("/admin/usersKey");
+		//String usersKeyContent = "";
+
 		//MyKey activeUsersKey = new MyKey("/admin/activeUsersKey");
 		//MyKey duplicatedActiveUsersKey = new MyKey("/admin/duplicatedActiveUsersKey");
 		
 		//keys and contents
 		
 		//username and mounting point
-		
 		
 		PropertiesLoader.loadPropertyFile();
 		
@@ -179,7 +183,7 @@ public class Client {
 		if(username.equals("superadmin")) {
 			
 			try {
-				chord.create(localURL, new ID(getSHA1(mac)));
+				chord.create(localURL, new ID(getSHA1(mac + username)));
 				System.out.println("Create executed!");
 				peersFile.prependPeerToPeerList(localURL);
 				peersFile.save();
@@ -197,8 +201,10 @@ public class Client {
 		for(URL url : peersList) {
 			try {
 
-				chord.join(localURL, new ID(getSHA1(mac)), url);
-
+				chord.join(localURL, new ID(getSHA1(mac + username)), url);
+				
+				chord.insert(usersKey, username);
+				
 				if(username.equals("admin")) {
 					
 					boolean firstTime = false;
@@ -207,9 +213,8 @@ public class Client {
 
 					if(firstTime) {
 						chord.insert(keyRoot, keyRootContent);
-
 					}
-				
+					
 //						Set<Serializable> usersData = chord.retrieve(usersKey);
 //						StringBuilder users = new StringBuilder();
 //						System.out.println("number of elements in users data: " + usersData.size());
@@ -244,7 +249,31 @@ public class Client {
 
 			//chama funcao que faz download do ficheiro peers global
 		}
-
+		System.out.println("ENTRIES: " + ((ChordImpl) chord).printEntries());
+		System.out.println("------------------------------------------------");
+		
+		System.out.println("REFERENCES: " + ((ChordImpl) chord).printReferences());
+		System.out.println("------------------------------------------------");
+		
+		
+		System.out.println("FINGERTABLES: " + ((ChordImpl) chord).printFingerTable());
+		System.out.println("------------------------------------------------");
+		
+		
+		
+		System.out.println("PREDECESSOR: " + ((ChordImpl) chord).printPredecessor());
+		System.out.println("------------------------------------------------");
+		
+		
+		System.out.println("SUCCESSOR: " + ((ChordImpl) chord).printSuccessorList());
+		System.out.println("------------------------------------------------");
+		
+		
+		
+		
+		
+		
+		
 		Fs fs = Fs.initializeFuse(chord, folder, false);
 
 
