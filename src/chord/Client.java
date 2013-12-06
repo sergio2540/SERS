@@ -1,8 +1,16 @@
 package chord;
 
 import java.io.BufferedReader;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.io.InputStream;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutput;
+import java.io.ObjectOutputStream;
 import java.io.Serializable;
+import java.net.DatagramPacket;
+import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.net.InterfaceAddress;
 import java.net.MalformedURLException;
@@ -22,6 +30,7 @@ import java.util.Random;
 import java.util.Set;
 
 import de.uniba.wiai.lspi.chord.com.Entry;
+import de.uniba.wiai.lspi.chord.com.Node;
 import de.uniba.wiai.lspi.chord.console.command.Retrieve;
 import de.uniba.wiai.lspi.chord.data.ID;
 import de.uniba.wiai.lspi.chord.data.URL;
@@ -30,12 +39,18 @@ import de.uniba.wiai.lspi.chord.service.PropertiesLoader;
 import de.uniba.wiai.lspi.chord.service.ServiceException;
 import de.uniba.wiai.lspi.chord.service.impl.ChordImpl;
 import fuse.Fs;
+import gossip.core.Gossip;
+import gossip.message.*;
 
 public class Client {
 
 	static int N = 15;
 	static int HIGHPORT = 49151;
 	static int LOWPORT = 1024;
+
+	private static Chord chord;
+
+	private static DatagramSocket socket;
 
 	public static byte[] getSHA1(String username) {
 		String sha1;
@@ -119,11 +134,32 @@ public class Client {
 		Random random = new Random();
 		//numero entre 1 e higher
 		int port = lower + random.nextInt(higher - lower) + 1;
-		System.out.println("Random port: " + port);
+		//System.out.println("Random port: " + port);
 		return port;
 
 	}
 
+	public static URL getGossipPeer() {
+
+		System.out.println("getGossipPeer CALLED");
+
+		List<Node> nodes = new ArrayList<Node>();
+
+		nodes.addAll(((ChordImpl)chord).getReferences().getSuccessors());
+		nodes.add(((ChordImpl)chord).getReferences().getPredecessor());
+
+		Random random = new Random();
+
+		int index = random.nextInt(nodes.size());
+		Node chosenNode;
+
+		chosenNode = nodes.get(index);
+
+		System.out.println("PEER URL chosen: " + chosenNode.getNodeURL().toString());
+
+		return chosenNode.getNodeURL();
+
+	}
 
 	public static void main(String[] args){
 
@@ -131,26 +167,26 @@ public class Client {
 			System.out.println("Invalid arguments!");
 			System.exit(1);
 		}
-		
+
 		Collection<URL> peersList;
 		Collection<URL> peersToBeRemoved = new ArrayList<URL>();
 
 		//keys and contents
 		MyKey keyRoot = new MyKey("/");
 		String keyRootContent = "DIR\n";
-		
+
 		MyKey usersKey = new MyKey("/admin/usersKey");
 		//String usersKeyContent = "";
 
 		//MyKey activeUsersKey = new MyKey("/admin/activeUsersKey");
 		//MyKey duplicatedActiveUsersKey = new MyKey("/admin/duplicatedActiveUsersKey");
-		
+
 		//keys and contents
-		
+
 		//username and mounting point
-		
+
 		PropertiesLoader.loadPropertyFile();
-		
+
 		String username = args[0];
 		String folder = args[1];
 		//username and mounting point
@@ -158,7 +194,7 @@ public class Client {
 		PeersFile peersFile = new PeersFile("https://dl.dropboxusercontent.com/u/23827391/peers", "peers");
 		peersList = peersFile.getPeersList();
 
-		Chord chord = new ChordImpl();
+		chord = new ChordImpl();
 		String protocol = URL.KNOWN_PROTOCOLS.get(URL.SOCKET_PROTOCOL);
 		URL localURL = null;
 
@@ -173,15 +209,15 @@ public class Client {
 
 		//pode devolver NULL
 		String mac = getMacAdress();
-		
+
 		if(mac == null) {
 			System.out.println("Could not create your ID because we couldnt get your MAC address");
 			System.exit(1);
 		}
 
-		
+
 		if(username.equals("superadmin")) {
-			
+
 			try {
 				chord.create(localURL, new ID(getSHA1(mac + username)));
 				System.out.println("Create executed!");
@@ -193,7 +229,7 @@ public class Client {
 			}
 
 		}
-		
+
 		if(peersList.isEmpty()) {
 			System.out.println("PeersList empty!");
 		}
@@ -202,29 +238,179 @@ public class Client {
 			try {
 
 				chord.join(localURL, new ID(getSHA1(mac + username)), url);
-				
+
 				chord.insert(usersKey, username);
+
+				socket = new DatagramSocket(chord.getURL().getPort());
+				
+				final Gossip gossip = new Gossip();		
 				
 				if(username.equals("admin")) {
-					
+
 					boolean firstTime = false;
 					Set<Serializable> data = chord.retrieve(keyRoot);
 					firstTime = data.isEmpty();
 
 					if(firstTime) {
+						gossip.setValues(1, 1);				
 						chord.insert(keyRoot, keyRootContent);
+					} else {
+						gossip.setValues(1, 0);	
 					}
-					
-//						Set<Serializable> usersData = chord.retrieve(usersKey);
-//						StringBuilder users = new StringBuilder();
-//						System.out.println("number of elements in users data: " + usersData.size());
-//						for(Serializable ser : usersData) {
-//							users.append(ser.toString());
-//							users.append("\n");
-//						}
-//						System.out.println(users.toString());
+
+					//						Set<Serializable> usersData = chord.retrieve(usersKey);
+					//						StringBuilder users = new StringBuilder();
+					//						System.out.println("number of elements in users data: " + usersData.size());
+					//						for(Serializable ser : usersData) {
+					//							users.append(ser.toString());
+					//							users.append("\n");
+					//						}
+					//						System.out.println(users.toString());
+				} else {
+					gossip.setValues(1, 0);
 				}
 				
+				Thread udpReceiverThread = new Thread(new Runnable(){	
+
+					@Override
+					public void run(){
+
+						try {
+
+							while(true)
+							{
+								
+								byte[] data = new byte[4];
+								DatagramPacket packet = new DatagramPacket(data, data.length);
+
+								socket.receive(packet);
+
+								int len = 0;
+								// byte[] -> int
+								for (int i = 0; i < 4; ++i) {
+									len |= (data[3-i] & 0xff) << (i << 3);
+								}
+
+								// now we know the length of the payload
+								byte[] buffer = new byte[len];
+								packet = new DatagramPacket(buffer, buffer.length);
+
+								socket.receive(packet);
+
+								ByteArrayInputStream message = new ByteArrayInputStream(buffer);
+								ObjectInputStream oos = null;
+								oos = new ObjectInputStream(message);
+								Message m = null;
+								m = (Message) oos.readObject();
+
+								gossip.processMessage(m);
+
+								System.out.println("MESSAGE RECEIVED: " + m.toString());
+								System.out.println("GOSSIP RESULT: " + gossip.getActiveNodes() / gossip.getActiveNodesWeight());
+
+							}
+
+						} catch (SocketException e) {
+							e.printStackTrace();
+						} catch (UnknownHostException e) {
+							e.printStackTrace();
+						} catch (IOException e) {
+							e.printStackTrace();
+						} catch (ClassNotFoundException e) {
+							e.printStackTrace();
+						} finally {
+							socket.close();
+						}
+					}
+				});
+
+				udpReceiverThread.start();
+
+				Thread udpSender = new Thread(new Runnable(){
+
+					@Override
+					public void run(){ //tenho ip porta
+
+						try {
+
+							while(true) {
+								
+								
+								URL url = getGossipPeer();
+								//criar mensagens para enviar
+								DatagramPacket packet = null; 
+
+								byte[] serialized;
+								Message msg = gossip.getMessage(MessageType.Q1);
+
+								System.out.println("MESSAGE SENT: " + msg.toString());
+
+								serialized = (UDPSerialization(msg));
+
+								packet = new DatagramPacket(serialized, serialized.length,InetAddress.getByName(url.getHost()),url.getPort());
+
+								int number = serialized.length;
+								byte[] data = new byte[4];
+
+								// int -> byte[]
+								for (int i = 0; i < 4; ++i) {
+									int shift = i << 3; // i * 8
+									data[3-i] = (byte)((number & (0xff << shift)) >>> shift);
+								}
+
+								socket.send(new DatagramPacket(data, data.length,InetAddress.getByName(url.getHost()),url.getPort()));
+
+								socket.send(packet);
+								
+								gossip.processMessage(msg);
+								
+								Thread.sleep(5000);
+								
+							}
+
+						} catch (InterruptedException e) {
+							e.printStackTrace();
+						} catch (UnknownHostException e) {
+							e.printStackTrace();
+						} catch (SocketException e) {
+							e.printStackTrace();
+						} catch (IOException e) {
+							e.printStackTrace();
+						} finally {
+							socket.close();
+						}
+						//UDPSerialization(new Message(MessageType.Q2,value2, weight2));
+						//UDPSerialization(new Message(MessageType.Q3,value3, weight3));
+						//UDPSerialization(new Message(MessageType.Q4,value4, weight4));    		    
+					}
+
+					public byte[] UDPSerialization(Message q) {
+
+						//System.out.println("UDPSerialization - MESSAGE: " + "value: " + q.getValue() + "weight: " + q.getWeight());
+
+						ByteArrayOutputStream bStream = new ByteArrayOutputStream();
+						ObjectOutput oo = null;
+						try {
+
+							oo = new ObjectOutputStream(bStream);
+							oo.writeObject(q);
+							oo.flush();
+							bStream.flush();
+
+
+						} catch (IOException e) {
+							e.printStackTrace();
+						}
+						return bStream.toByteArray();    	
+
+					}
+
+				});
+
+				udpSender.start();
+
+				
+
 
 				break; //sai da lista de peers se conseguir fazer join
 
@@ -236,9 +422,10 @@ public class Client {
 
 		}
 
+
 		peersFile.removePeersInPeersList(peersToBeRemoved);
 		int peersInList = peersList.size();
-		System.out.println("PEERS IN THE LIST OF PEERS" + peersInList);
+		//System.out.println("PEERS IN THE LIST OF PEERS" + peersInList);
 
 		peersFile.prependPeerToPeerList(localURL);
 		peersFile.save();
@@ -249,34 +436,29 @@ public class Client {
 
 			//chama funcao que faz download do ficheiro peers global
 		}
-		System.out.println("ENTRIES: " + ((ChordImpl) chord).printEntries());
-		System.out.println("------------------------------------------------");
-		
-		System.out.println("REFERENCES: " + ((ChordImpl) chord).printReferences());
-		System.out.println("------------------------------------------------");
-		
-		
-		System.out.println("FINGERTABLES: " + ((ChordImpl) chord).printFingerTable());
-		System.out.println("------------------------------------------------");
-		
-		
-		
-		System.out.println("PREDECESSOR: " + ((ChordImpl) chord).printPredecessor());
-		System.out.println("------------------------------------------------");
-		
-		
-		System.out.println("SUCCESSOR: " + ((ChordImpl) chord).printSuccessorList());
-		System.out.println("------------------------------------------------");
-		
-		
-		
-		
-		
-		
-		
-		Fs fs = Fs.initializeFuse(chord, folder, false);
 
+//		System.out.println("ENTRIES: " + ((ChordImpl) chord).printEntries());
+//		System.out.println("------------------------------------------------");
+//
+//		System.out.println("REFERENCES: " + ((ChordImpl) chord).printReferences());
+//		System.out.println("------------------------------------------------");
+//
+//
+//		System.out.println("FINGERTABLES: " + ((ChordImpl) chord).printFingerTable());
+//		System.out.println("------------------------------------------------");
+//
+//
+//
+//		System.out.println("PREDECESSOR: " + ((ChordImpl) chord).printPredecessor());
+//		System.out.println("------------------------------------------------");
+//
+//
+//		System.out.println("SUCCESSOR: " + ((ChordImpl) chord).printSuccessorList());
+//		System.out.println("------------------------------------------------");
+
+		Fs fs = Fs.initializeFuse(chord, folder, false);
 
 	}
 
 }
+
