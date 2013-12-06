@@ -7,10 +7,10 @@ import java.io.Serializable;
 public class Message implements Serializable {
 
 	MessageType msgType;
-	float value;
-	float weight;
+	double value;
+	double weight;
 	
-	public Message(MessageType msgType, float value, float weight) {
+	public Message(MessageType msgType, double value, double weight) {
 		this.msgType = msgType;
 		this.value = value;
 		this.weight = weight;
@@ -24,11 +24,11 @@ public class Message implements Serializable {
 		return msgType;
 	}
 
-	public float getValue() {
+	public double getValue() {
 		return value;
 	}
 
-	public float getWeight() {
+	public double getWeight() {
 		return weight;
 	}
 	

@@ -252,10 +252,10 @@ public class Client {
 					firstTime = data.isEmpty();
 
 					if(firstTime) {
-						gossip.setValues(1, 1, 1, 1, 1, 0, 1,0);//os dois ultimos deviam ser os tamanhos dos ficheiros				
+						gossip.setValues(1, 1, 1, 1, 9, 1, (double)Integer.parseInt(args[2]), 1);//os dois ultimos deviam ser os tamanhos dos ficheiros		
 						chord.insert(keyRoot, keyRootContent);
 					} else {
-						gossip.setValues(1, 0, 1, 1, 1, 0, 1,0);//os dois ultimos deviam ser os tamanhos dos ficheiros	
+						gossip.setValues(1, 1, 1, 1, 9, 1, (double)Integer.parseInt(args[2]), 1);//os dois ultimos deviam ser os tamanhos dos ficheiros	
 					}
 
 					//						Set<Serializable> usersData = chord.retrieve(usersKey);
@@ -267,7 +267,7 @@ public class Client {
 					//						}
 					//						System.out.println(users.toString());
 				} else {
-					gossip.setValues(1, 0, 1, 1, 1, 0, 1,0);
+					gossip.setValues(1, 0, 1, 0, 9, 1, (double)Integer.parseInt(args[2]), 1);
 				}
 
 				Thread udpReceiverThread = new Thread(new Runnable(){	
@@ -275,11 +275,9 @@ public class Client {
 					@Override
 					public void run(){
 
-						try {
-
-							while(true)
-							{
-
+						while(true)
+						{
+							try {
 								byte[] data = new byte[4];
 								DatagramPacket packet = new DatagramPacket(data, data.length);
 
@@ -306,21 +304,25 @@ public class Client {
 								gossip.processMessage(m);
 
 								System.out.println("MESSAGE RECEIVED: " + m.toString());
-								System.out.println("GOSSIP RESULT: " + gossip.getActiveNodes() / gossip.getActiveNodesWeight());
+								System.out.println("GOSSIP RESULT Q1: " + gossip.getActiveNodes() / gossip.getActiveNodesWeight());
+								System.out.println("GOSSIP RESULT Q2: " + gossip.getActiveUsers() / gossip.getActiveUsersWeight());
+								System.out.println("GOSSIP RESULT Q3: " + gossip.getAverageFiles() / gossip.getAverageFilesWeight());
+								System.out.println("GOSSIP RESULT Q4: " + gossip.getAverageMb() / gossip.getAverageMbWeight());
 
+							} catch (SocketException e) {
+								e.printStackTrace();
+							} catch (UnknownHostException e) {
+								e.printStackTrace();
+							} catch (IOException e) {
+								e.printStackTrace();
+							} catch (ClassNotFoundException e) {
+								e.printStackTrace();
+							} finally {
+								//socket.close();
 							}
-
-						} catch (SocketException e) {
-							e.printStackTrace();
-						} catch (UnknownHostException e) {
-							e.printStackTrace();
-						} catch (IOException e) {
-							e.printStackTrace();
-						} catch (ClassNotFoundException e) {
-							e.printStackTrace();
-						} finally {
-							socket.close();
 						}
+
+
 					}
 				});
 
@@ -331,10 +333,10 @@ public class Client {
 					@Override
 					public void run(){ //tenho ip porta
 
-						try {
 
-							while(true) {
 
+						while(true) {
+							try {
 
 								URL url = getGossipPeer();
 								//criar mensagens para enviar
@@ -372,21 +374,22 @@ public class Client {
 
 								}
 
-								Thread.sleep(5000);
-
+								Thread.sleep(1000);
+								
+							} catch (InterruptedException e) {
+								e.printStackTrace();
+							} catch (UnknownHostException e) {
+								e.printStackTrace();
+							} catch (SocketException e) {
+								e.printStackTrace();
+							} catch (IOException e) {
+								e.printStackTrace();
+							} finally {
+								//socket.close();
 							}
-
-						} catch (InterruptedException e) {
-							e.printStackTrace();
-						} catch (UnknownHostException e) {
-							e.printStackTrace();
-						} catch (SocketException e) {
-							e.printStackTrace();
-						} catch (IOException e) {
-							e.printStackTrace();
-						} finally {
-							socket.close();
 						}
+
+
 						//UDPSerialization(new Message(MessageType.Q2,value2, weight2));
 						//UDPSerialization(new Message(MessageType.Q3,value3, weight3));
 						//UDPSerialization(new Message(MessageType.Q4,value4, weight4));    		    
@@ -416,8 +419,6 @@ public class Client {
 				});
 
 				udpSender.start();
-
-
 
 				break; //sai da lista de peers se conseguir fazer join
 
@@ -464,6 +465,36 @@ public class Client {
 		//		System.out.println("------------------------------------------------");
 
 		Fs fs = Fs.initializeFuse(chord, folder, false);
+
+	}
+
+
+	public static int getNumberOfFiles() {
+
+		int num = 0;
+		for (Map.Entry<ID, Set<Entry>> entry : ((ChordImpl) chord).getEntries().getEntries().entrySet()) {
+			for (Entry setEntry : entry.getValue()) {
+				num++;
+			}
+
+		}		
+
+		return num;
+
+	}
+
+	//TODO: modificar o codigo getSize da ENTRY e meter isto tudo a devolver um tuplo para optimizar
+	public static int getNumberOfFileMBytes() {
+
+		int bytes = 0;
+		for (Map.Entry<ID, Set<Entry>> entry : ((ChordImpl) chord).getEntries().getEntries().entrySet()) {
+			for (Entry setEntry : entry.getValue()) {
+				bytes += setEntry.getValue().toString().getBytes().length;
+			}
+
+		}	
+
+		return bytes/(1024*1024);
 
 	}
 

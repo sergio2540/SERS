@@ -7,96 +7,97 @@ import java.io.IOException;
 
 public class Gossip {
 
-	private float activeNodes;
-	private float activeNodesWeight;
+	private double activeNodes;
+	private double activeNodesWeight;
 	
-	private float activeUsers;
-	private float activeUsersWeight;
+	private double activeUsers;
+	private double activeUsersWeight;
 	
-	private float averageFiles;
-	private float averageFilesWeight; 
+	private double averageFiles;
+	private double averageFilesWeight; 
 	
-	private float averageMb;
-	private float averageMbWeight;
+	private double averageMb;
+	private double averageMbWeight;
 	
-	public Gossip(float activeNodes, float activeNodesWeight) {
+	public Gossip(double activeNodes, double activeNodesWeight) {
 		this.activeNodes = activeNodes;
 		this.activeNodesWeight = activeNodesWeight;
 	}
 	
 	public Gossip(){}
 	
-	public void setValues(float activeNodes, float activeNodesWeight,float activeUsers, float activeUsersWeight,float averageFiles, float averageFilesWeight,float averageMb,float averageMbWeight ) {
+	public void setValues(double activeNodes, double activeNodesWeight, double activeUsers, double activeUsersWeight, double averageFiles, double averageFilesWeight, double averageMb, double averageMbWeight ) {
 		this.activeNodes = activeNodes;
 		this.activeNodesWeight = activeNodesWeight;
 		this.activeUsers = activeUsers;
 		this.activeUsersWeight = activeUsersWeight;
 		this.averageFiles = averageFiles;
+		this.averageFilesWeight = averageFilesWeight;
 		this.averageMb = averageMb;
 		this.averageMbWeight = averageMbWeight;
 	}
 	
-	public float getActiveNodes() {
+	public double getActiveNodes() {
 		return activeNodes;
 	}
 
-	private void setActiveNodes(float activeNodes) {
+	private void setActiveNodes(double activeNodes) {
 		this.activeNodes = activeNodes;
 	}
 
-	public float getActiveNodesWeight() {
+	public double getActiveNodesWeight() {
 		return activeNodesWeight;
 	}
 
-	private void setActiveNodesWeight(float activeNodesWeight) {
+	private void setActiveNodesWeight(double activeNodesWeight) {
 		this.activeNodesWeight = activeNodesWeight;
 	}
 
-	public float getActiveUsers() {
+	public double getActiveUsers() {
 		return activeUsers;
 	}
 
-	private void setActiveUsers(float activeUsers) {
+	private void setActiveUsers(double activeUsers) {
 		this.activeUsers = activeUsers;
 	}
 
-	public float getActiveUsersWeight() {
+	public double getActiveUsersWeight() {
 		return activeUsersWeight;
 	}
 
-	private void setActiveUsersWeight(float activeUsersWeight) {
+	private void setActiveUsersWeight(double activeUsersWeight) {
 		this.activeUsersWeight = activeUsersWeight;
 	}
 
-	public float getAverageFiles() {
+	public double getAverageFiles() {
 		return averageFiles;
 	}
 
-	private void setAverageFiles(float averageFiles) {
+	private void setAverageFiles(double averageFiles) {
 		this.averageFiles = averageFiles;
 	}
 
-	public float getAverageFilesWeight() {
+	public double getAverageFilesWeight() {
 		return averageFilesWeight;
 	}
 
-	private void setAverageFilesWeight(float averageFilesWeight) {
+	private void setAverageFilesWeight(double averageFilesWeight) {
 		this.averageFilesWeight = averageFilesWeight;
 	}
 
-	public float getAverageMb() {
+	public double getAverageMb() {
 		return averageMb;
 	}
 
-	private void setAverageMb(float averageMb) {
+	private void setAverageMb(double averageMb) {
 		this.averageMb = averageMb;
 	}
 
-	public float getAverageMbWeight() {
+	public double getAverageMbWeight() {
 		return averageMbWeight;
 	}
 
-	private void setAverageMbWeight(float averageMbWeight) {
+	private void setAverageMbWeight(double averageMbWeight) {
 		this.averageMbWeight = averageMbWeight;
 	}
 
@@ -140,7 +141,7 @@ public class Gossip {
 		
 		case Q1: 
 			
-			msg = new Message(type, (float)getActiveNodes()/2, (float)getActiveNodesWeight()/2);
+			msg = new Message(type, getActiveNodes()/2, getActiveNodesWeight()/2);
 			
 			break;
 		
@@ -173,15 +174,5 @@ public class Gossip {
 		return msg;
 		
 	}
-	
-	public void reset() {
-	
-		this.activeNodes = 1;
-		this.activeNodesWeight = 0;
-		
-
-	}
-
-	
 	
 }
