@@ -43,8 +43,6 @@ public class Fs extends FuseFilesystemAdapterAssumeImplemented {
 	private Chord chord;
 	private String path;
 
-	private gossip.Client gossipClient;
-
 	//private static String content = "";
 
 	private final int BLOCKSIZE = 1024;
@@ -57,8 +55,6 @@ public class Fs extends FuseFilesystemAdapterAssumeImplemented {
 	private Fs(Chord chord, String path) {
 		this.chord = chord;
 		this.path = path;
-		this.gossipClient = new gossip.Client(chord);
-
 	}   
 
 	public static Fs initializeFuse(Chord chord, String path, boolean debug) {
@@ -406,8 +402,6 @@ public class Fs extends FuseFilesystemAdapterAssumeImplemented {
 
 
 				System.out.println("Content do ficheiro: "  + new String(buffer));
-
-				this.gossipClient.getEntriesById();
 
 			}
 

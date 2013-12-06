@@ -242,9 +242,9 @@ public class Client {
 				chord.insert(usersKey, username);
 
 				socket = new DatagramSocket(chord.getURL().getPort());
-				
+
 				final Gossip gossip = new Gossip();		
-				
+
 				if(username.equals("admin")) {
 
 					boolean firstTime = false;
@@ -269,7 +269,7 @@ public class Client {
 				} else {
 					gossip.setValues(1, 0, 1, 1, 1, 0, 1,0);
 				}
-				
+
 				Thread udpReceiverThread = new Thread(new Runnable(){	
 
 					@Override
@@ -279,7 +279,7 @@ public class Client {
 
 							while(true)
 							{
-								
+
 								byte[] data = new byte[4];
 								DatagramPacket packet = new DatagramPacket(data, data.length);
 
@@ -334,8 +334,8 @@ public class Client {
 						try {
 
 							while(true) {
-								
-								
+
+
 								URL url = getGossipPeer();
 								//criar mensagens para enviar
 								DatagramPacket packet = null; 
@@ -348,32 +348,32 @@ public class Client {
 
 
 								for(Message msg : messages){
-								System.out.println("MESSAGE SENT: " + msg.toString());
+									System.out.println("MESSAGE SENT: " + msg.toString());
 
-								
-								serialized = (UDPSerialization(msg));
 
-								packet = new DatagramPacket(serialized, serialized.length,InetAddress.getByName(url.getHost()),url.getPort());
+									serialized = (UDPSerialization(msg));
 
-								int number = serialized.length;
-								byte[] data = new byte[4];
+									packet = new DatagramPacket(serialized, serialized.length,InetAddress.getByName(url.getHost()),url.getPort());
 
-								// int -> byte[]
-								for (int i = 0; i < 4; ++i) {
-									int shift = i << 3; // i * 8
-									data[3-i] = (byte)((number & (0xff << shift)) >>> shift);
+									int number = serialized.length;
+									byte[] data = new byte[4];
+
+									// int -> byte[]
+									for (int i = 0; i < 4; ++i) {
+										int shift = i << 3; // i * 8
+										data[3-i] = (byte)((number & (0xff << shift)) >>> shift);
+									}
+
+									socket.send(new DatagramPacket(data, data.length,InetAddress.getByName(url.getHost()),url.getPort()));
+
+									socket.send(packet);
+
+									gossip.processMessage(msg);
+
 								}
 
-								socket.send(new DatagramPacket(data, data.length,InetAddress.getByName(url.getHost()),url.getPort()));
-
-								socket.send(packet);
-								
-								gossip.processMessage(msg);
-								
-								}
-								
 								Thread.sleep(5000);
-								
+
 							}
 
 						} catch (InterruptedException e) {
@@ -417,7 +417,7 @@ public class Client {
 
 				udpSender.start();
 
-				
+
 
 				break; //sai da lista de peers se conseguir fazer join
 
@@ -444,24 +444,24 @@ public class Client {
 			//chama funcao que faz download do ficheiro peers global
 		}
 
-//		System.out.println("ENTRIES: " + ((ChordImpl) chord).printEntries());
-//		System.out.println("------------------------------------------------");
-//
-//		System.out.println("REFERENCES: " + ((ChordImpl) chord).printReferences());
-//		System.out.println("------------------------------------------------");
-//
-//
-//		System.out.println("FINGERTABLES: " + ((ChordImpl) chord).printFingerTable());
-//		System.out.println("------------------------------------------------");
-//
-//
-//
-//		System.out.println("PREDECESSOR: " + ((ChordImpl) chord).printPredecessor());
-//		System.out.println("------------------------------------------------");
-//
-//
-//		System.out.println("SUCCESSOR: " + ((ChordImpl) chord).printSuccessorList());
-//		System.out.println("------------------------------------------------");
+		//		System.out.println("ENTRIES: " + ((ChordImpl) chord).printEntries());
+		//		System.out.println("------------------------------------------------");
+		//
+		//		System.out.println("REFERENCES: " + ((ChordImpl) chord).printReferences());
+		//		System.out.println("------------------------------------------------");
+		//
+		//
+		//		System.out.println("FINGERTABLES: " + ((ChordImpl) chord).printFingerTable());
+		//		System.out.println("------------------------------------------------");
+		//
+		//
+		//
+		//		System.out.println("PREDECESSOR: " + ((ChordImpl) chord).printPredecessor());
+		//		System.out.println("------------------------------------------------");
+		//
+		//
+		//		System.out.println("SUCCESSOR: " + ((ChordImpl) chord).printSuccessorList());
+		//		System.out.println("------------------------------------------------");
 
 		Fs fs = Fs.initializeFuse(chord, folder, false);
 
