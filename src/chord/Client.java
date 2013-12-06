@@ -252,10 +252,10 @@ public class Client {
 					firstTime = data.isEmpty();
 
 					if(firstTime) {
-						gossip.setValues(1, 1);				
+						gossip.setValues(1, 1, 1, 1, 1, 0, 1,0);//os dois ultimos deviam ser os tamanhos dos ficheiros				
 						chord.insert(keyRoot, keyRootContent);
 					} else {
-						gossip.setValues(1, 0);	
+						gossip.setValues(1, 0, 1, 1, 1, 0, 1,0);//os dois ultimos deviam ser os tamanhos dos ficheiros	
 					}
 
 					//						Set<Serializable> usersData = chord.retrieve(usersKey);
@@ -267,7 +267,7 @@ public class Client {
 					//						}
 					//						System.out.println(users.toString());
 				} else {
-					gossip.setValues(1, 0);
+					gossip.setValues(1, 0, 1, 1, 1, 0, 1,0);
 				}
 				
 				Thread udpReceiverThread = new Thread(new Runnable(){	
@@ -339,12 +339,18 @@ public class Client {
 								URL url = getGossipPeer();
 								//criar mensagens para enviar
 								DatagramPacket packet = null; 
-
 								byte[] serialized;
-								Message msg = gossip.getMessage(MessageType.Q1);
+								List<Message> messages = new ArrayList<Message>();
+								messages.add(gossip.getMessage(MessageType.Q1));
+								messages.add(gossip.getMessage(MessageType.Q2));
+								messages.add(gossip.getMessage(MessageType.Q3));
+								messages.add(gossip.getMessage(MessageType.Q4));
 
+
+								for(Message msg : messages){
 								System.out.println("MESSAGE SENT: " + msg.toString());
 
+								
 								serialized = (UDPSerialization(msg));
 
 								packet = new DatagramPacket(serialized, serialized.length,InetAddress.getByName(url.getHost()),url.getPort());
@@ -363,6 +369,8 @@ public class Client {
 								socket.send(packet);
 								
 								gossip.processMessage(msg);
+								
+								}
 								
 								Thread.sleep(5000);
 								
@@ -410,7 +418,6 @@ public class Client {
 				udpSender.start();
 
 				
-
 
 				break; //sai da lista de peers se conseguir fazer join
 

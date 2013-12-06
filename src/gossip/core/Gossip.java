@@ -26,9 +26,14 @@ public class Gossip {
 	
 	public Gossip(){}
 	
-	public void setValues(float activeNodes, float activeNodesWeight) {
+	public void setValues(float activeNodes, float activeNodesWeight,float activeUsers, float activeUsersWeight,float averageFiles, float averageFilesWeight,float averageMb,float averageMbWeight ) {
 		this.activeNodes = activeNodes;
 		this.activeNodesWeight = activeNodesWeight;
+		this.activeUsers = activeUsers;
+		this.activeUsersWeight = activeUsersWeight;
+		this.averageFiles = averageFiles;
+		this.averageMb = averageMb;
+		this.averageMbWeight = averageMbWeight;
 	}
 	
 	public float getActiveNodes() {
@@ -103,11 +108,24 @@ public class Gossip {
 				
 			setActiveNodes(getActiveNodes() + m.getValue());
 			setActiveNodesWeight(getActiveNodesWeight() + m.getWeight());
-			
 			break;
 			
-			default: 
-				
+		case Q2:
+			setActiveUsers(getActiveUsers() + m.getValue());
+			setActiveUsersWeight(getActiveUsersWeight() + m.getWeight());
+			break;
+			
+		case Q3:
+			setAverageFiles(getAverageFiles() + m.getValue());
+			setAverageFilesWeight(getAverageFilesWeight() + m.getWeight());
+			break;
+			
+		case Q4:
+			setAverageMb(getAverageMb() + m.getValue());
+			setAverageMbWeight(getAverageMbWeight() + m.getWeight());
+			break;
+			
+		default: System.out.println("Query type is invalid.");
 				break;
 		
 		}
@@ -140,12 +158,12 @@ public class Gossip {
 			
 		case Q4: 
 			
-			msg = new Message(type, getAverageFiles()/2, getAverageFilesWeight()/2);
+			msg = new Message(type, getAverageMb()/2, getAverageMbWeight()/2);
 			
 			break;
 			
 		default:
-				
+				System.out.println("Invalid query for processing.");
 				msg = new Message(type);
 				
 			break;
