@@ -37,6 +37,42 @@ public class Gossip {
 		this.averageMbWeight = averageMbWeight;
 	}
 	
+	public void setQ1Values(double activeNodes, double activeNodesWeight) {
+		this.activeNodes = activeNodes;
+		this.activeNodesWeight = activeNodesWeight;
+	}
+	
+
+	public void setQ2Values(double activeUsers, double activeUsersWeight) {
+		this.activeUsers = activeUsers;
+		this.activeUsersWeight = activeUsersWeight;
+	}
+	
+	public boolean approx(double value1, double value2) {
+		
+		final double ERROR = 0.01;
+		
+		if(Math.abs(value1-value2) < ERROR){
+			return true;
+		}else{
+			return false;
+		}
+	
+	}
+	
+
+	public void setQ3Values( double averageFiles, double averageFilesWeight) {
+		this.averageFiles = averageFiles;
+		this.averageFilesWeight = averageFilesWeight;
+	}
+	
+
+	public void setQ4Values(double averageMb, double averageMbWeight) {
+		this.averageMb = averageMb;
+		this.averageMbWeight = averageMbWeight;
+	}
+	
+	
 	public double getActiveNodes() {
 		return activeNodes;
 	}

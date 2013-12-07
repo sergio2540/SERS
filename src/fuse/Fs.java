@@ -450,7 +450,7 @@ public class Fs extends FuseFilesystemAdapterAssumeImplemented {
 				
 				byte[] buffer = newBlock.toByteArray();
 				
-				String shaBuffer = new String(Client.bytesToHex(Client.getSHA1(new String(buffer))));
+				String shaBuffer = new String(Client.bytesToHex(Client.getSHA1(buffer)));
 
 				fileMetadata.updateBlock(blockNo, shaBuffer);
 

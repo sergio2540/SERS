@@ -52,7 +52,7 @@ public class Client {
 
 	private static DatagramSocket socket;
 
-	public static byte[] getSHA1(String username) {
+	public static byte[] getSHA1(byte[] username) {
 		String sha1;
 
 		MessageDigest mDigest = null;
@@ -61,7 +61,7 @@ public class Client {
 		} catch (NoSuchAlgorithmException e) {
 			e.printStackTrace();
 		}
-		byte[] result = mDigest.digest(username.getBytes());
+		byte[] result = mDigest.digest(username);
 
 		return result;
 
@@ -80,7 +80,7 @@ public class Client {
 		return new String(hexChars);
 	}
 
-	private static String getMacAdress() {
+	private static byte[] getMacAdress() {
 
 		InetAddress ip;
 
@@ -108,7 +108,7 @@ public class Client {
 
 			if(network == null) {
 				System.out.println("NULL");
-				return "";
+				return "".getBytes();
 			}
 
 			byte[] mac = network.getHardwareAddress();
@@ -125,7 +125,7 @@ public class Client {
 			e.printStackTrace();
 		}
 
-		return sb.toString();
+		return sb.toString().getBytes();
 
 	}
 
@@ -189,6 +189,7 @@ public class Client {
 
 		String username = args[0];
 		String folder = args[1];
+		final String username2 = new String(username);
 		//username and mounting point
 
 		PeersFile peersFile = new PeersFile("https://dl.dropboxusercontent.com/u/23827391/peers", "peers");
@@ -208,7 +209,7 @@ public class Client {
 		}
 
 		//pode devolver NULL
-		String mac = getMacAdress();
+		byte[] mac = getMacAdress();
 
 		if(mac == null) {
 			System.out.println("Could not create your ID because we couldnt get your MAC address");
@@ -219,12 +220,17 @@ public class Client {
 		if(username.equals("superadmin")) {
 
 			try {
-				chord.create(localURL, new ID(getSHA1(mac + username)));
+				ByteArrayOutputStream macAndUser = new ByteArrayOutputStream();
+				macAndUser.write(mac);
+				macAndUser.write(username.getBytes());
+				chord.create(localURL, new ID(getSHA1(macAndUser.toByteArray())));
 				System.out.println("Create executed!");
 				peersFile.prependPeerToPeerList(localURL);
 				peersFile.save();
 				while(true);
 			} catch (ServiceException e) {
+				e.printStackTrace();
+			} catch (IOException e) {
 				e.printStackTrace();
 			}
 
@@ -236,8 +242,12 @@ public class Client {
 
 		for(URL url : peersList) {
 			try {
+				
+				ByteArrayOutputStream macAndUser = new ByteArrayOutputStream();
+				macAndUser.write(mac);
+				macAndUser.write(username.getBytes());
 
-				chord.join(localURL, new ID(getSHA1(mac + username)), url);
+				chord.join(localURL, new ID(getSHA1(macAndUser.toByteArray())), url);
 
 				chord.insert(usersKey, username);
 
@@ -304,10 +314,10 @@ public class Client {
 								gossip.processMessage(m);
 
 								System.out.println("MESSAGE RECEIVED: " + m.toString());
-								System.out.println("GOSSIP RESULT Q1: " + gossip.getActiveNodes() / gossip.getActiveNodesWeight());
-								System.out.println("GOSSIP RESULT Q2: " + gossip.getActiveUsers() / gossip.getActiveUsersWeight());
-								System.out.println("GOSSIP RESULT Q3: " + gossip.getAverageFiles() / gossip.getAverageFilesWeight());
-								System.out.println("GOSSIP RESULT Q4: " + gossip.getAverageMb() / gossip.getAverageMbWeight());
+//								System.out.println("GOSSIP RESULT Q1: " + gossip.getActiveNodes() / gossip.getActiveNodesWeight());
+//								System.out.println("GOSSIP RESULT Q2: " + gossip.getActiveUsers() / gossip.getActiveUsersWeight());
+//								System.out.println("GOSSIP RESULT Q3: " + gossip.getAverageFiles() / gossip.getAverageFilesWeight());
+//								System.out.println("GOSSIP RESULT Q4: " + gossip.getAverageMb() / gossip.getAverageMbWeight());
 
 							} catch (SocketException e) {
 								e.printStackTrace();
@@ -333,11 +343,14 @@ public class Client {
 					@Override
 					public void run(){ //tenho ip porta
 
-
-
+						double value = 0, weight = 0;
+						
+						int rounds = 0;
 						while(true) {
 							try {
-
+								
+								
+								
 								URL url = getGossipPeer();
 								//criar mensagens para enviar
 								DatagramPacket packet = null; 
@@ -370,11 +383,35 @@ public class Client {
 
 									socket.send(packet);
 
+									
+									
 									gossip.processMessage(msg);
+									
+								
+									
 
 								}
+								
+								System.out.println("GOSSIP AVERAGE: " + gossip.getActiveNodes() / gossip.getActiveNodesWeight());
 
-								Thread.sleep(1000);
+								System.out.println("ROUNDS: " + rounds);
+								
+								
+								
+								if(gossip.approx(value/weight, (gossip.getActiveNodes()/gossip.getActiveNodesWeight()))) {
+									rounds = 0;
+									if(username2.equals("admin")) {
+										gossip.setQ1Values(1, 1);
+									} else {
+										gossip.setQ1Values(1, 0);
+									}
+								}
+								
+								value = gossip.getActiveNodes();
+								weight = gossip.getActiveNodesWeight();
+								
+								rounds++;
+								Thread.sleep(8000);
 								
 							} catch (InterruptedException e) {
 								e.printStackTrace();
