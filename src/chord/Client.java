@@ -542,7 +542,7 @@ public class Client {
 			//chama funcao que faz download do ficheiro peers global
 		}
 
-		Fs fs = Fs.initializeFuse(chord, folder, false);
+		//Fs fs = Fs.initializeFuse(chord, folder, false);
 
 	}
 
