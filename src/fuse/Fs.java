@@ -123,7 +123,6 @@ public class Fs extends FuseFilesystemAdapterAssumeImplemented {
 	public int open(final String path, final FileInfoWrapper info) {
 		System.out.println("open - Fs.java");
 		return 0;
-
 	}
 
 	@Override
