@@ -1,18 +1,10 @@
 package chord;
 
-import java.io.BufferedReader;
-import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
-import java.io.DataOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.io.ObjectInputStream;
-import java.io.ObjectOutput;
 import java.io.ObjectOutputStream;
 import java.io.Serializable;
-import java.net.DatagramPacket;
-import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.net.InterfaceAddress;
 import java.net.MalformedURLException;
@@ -26,8 +18,6 @@ import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Enumeration;
-import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
@@ -35,7 +25,6 @@ import java.util.Set;
 
 import de.uniba.wiai.lspi.chord.com.Entry;
 import de.uniba.wiai.lspi.chord.com.Node;
-import de.uniba.wiai.lspi.chord.console.command.Retrieve;
 import de.uniba.wiai.lspi.chord.data.ID;
 import de.uniba.wiai.lspi.chord.data.URL;
 import de.uniba.wiai.lspi.chord.service.Chord;
@@ -54,10 +43,7 @@ public class Client {
 
 	private static Chord chord;
 
-	private static DatagramSocket socket;
-
 	public static byte[] getSHA1(byte[] username) {
-		String sha1;
 
 		MessageDigest mDigest = null;
 		try {
@@ -138,7 +124,7 @@ public class Client {
 		Random random = new Random();
 		//numero entre 1 e higher
 		int port = lower + random.nextInt((higher - 1)  - lower) + 1;
-		//System.out.println("Random port: " + port);
+		System.out.println("Random port: " + port);
 		return port;
 
 	}
@@ -188,18 +174,8 @@ public class Client {
 		
 		final MyKey activeUsersKey = new MyKey("/admin/activeUserKey");
 		final String activeUsersContent = username;
-		//String usersKeyContent = "";
-
-		//MyKey activeUsersKey = new MyKey("/admin/activeUsersKey");
-		//MyKey duplicatedActiveUsersKey = new MyKey("/admin/duplicatedActiveUsersKey");
-
-		//keys and contents
-
-		//username and mounting point
 
 		PropertiesLoader.loadPropertyFile();
-
-		
 
 		PeersFile peersFile = new PeersFile("https://dl.dropboxusercontent.com/u/23827391/peers", "peers");
 		peersList = peersFile.getPeersList();
@@ -259,8 +235,6 @@ public class Client {
 				chord.join(localURL, new ID(getSHA1(macAndUser.toByteArray())), url);
 
 				chord.insert(usersKey, username);
-
-				//socket = new DatagramSocket(chord.getURL().getPort());
 
 				final Gossip gossip = new Gossip();		
 

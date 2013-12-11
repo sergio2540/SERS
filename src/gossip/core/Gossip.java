@@ -3,8 +3,6 @@ package gossip.core;
 import gossip.message.Message;
 import gossip.message.MessageType;
 
-import java.io.IOException;
-
 import chord.Client;
 
 public class Gossip {
