@@ -145,7 +145,7 @@ public class Client {
 
 	public static URL getGossipPeer() {
 
-		System.out.println("getGossipPeer CALLED");
+		//System.out.println("getGossipPeer CALLED");
 
 		List<Node> nodes = new ArrayList<Node>();
 
@@ -255,7 +255,7 @@ public class Client {
 
 				chord.insert(usersKey, username);
 
-				socket = new DatagramSocket(chord.getURL().getPort());
+				//socket = new DatagramSocket(chord.getURL().getPort());
 
 				final Gossip gossip = new Gossip();		
 
@@ -266,10 +266,12 @@ public class Client {
 					firstTime = data.isEmpty();
 
 					//if(firstTime) {
-					gossip.setQ1Values(1, 1);
-					gossip.setQ2Values(1, 1);
-					gossip.setQ3Values(getNumberOfFiles(), 1);
-					gossip.setQ4Values(getNumberOfFileMBytes(), 1);
+					
+					gossip.initActiveNodes(1,1);
+					gossip.initActiveUsers(1,1);
+					gossip.initAverageFiles(getNumberOfFiles(), 1);
+					gossip.initAverageMb(getNumberOfFileMBytes(), 1);
+					
 					chord.insert(keyRoot, keyRootContent);
 					//} else {
 					//gossip.setValues(1, 1, 1, 1, 9, 1, (double)Integer.parseInt(args[2]), 1);//os dois ultimos deviam ser os tamanhos dos ficheiros	
@@ -277,10 +279,12 @@ public class Client {
 
 
 				} else {
-					gossip.setQ1Values(1, 0);
-					gossip.setQ2Values(1, 0);
-					gossip.setQ3Values(getNumberOfFiles(), 1);
-					gossip.setQ4Values(getNumberOfFileMBytes(), 1);
+					
+					gossip.initActiveNodes(1, 0);
+					gossip.initActiveUsers(1, 0);
+					gossip.initAverageFiles(getNumberOfFiles(), 1);
+					gossip.initAverageMb(getNumberOfFileMBytes(), 1);
+					
 				}
 
 				Thread udpReceiverThread = new Thread(new Runnable(){	
@@ -306,6 +310,8 @@ public class Client {
 
 										ObjectInputStream inFromClient = null;
 										try {
+											
+											
 											Message message;
 											inFromClient = new ObjectInputStream(connectionSocket.getInputStream());
 
@@ -328,6 +334,9 @@ public class Client {
 											message = (Message) inFromClient.readObject();
 											gossip.processMessage(message);
 											System.out.println("MESSAGE RECEIVED: " + message.toString());
+											
+
+										
 
 										} catch (IOException e) {
 											e.printStackTrace();
@@ -339,34 +348,7 @@ public class Client {
 								});
 
 								clientAcceptThread.start();
-
-
-
-								/////////////////////////////////////////////////
-								//								byte[] data = new byte[4];
-								//								DatagramPacket packet = new DatagramPacket(data, data.length);
-
-								//								socket.receive(packet);
-
-								//								int len = 0;
-								//								// byte[] -> int
-								//								for (int i = 0; i < 4; ++i) {
-								//									len |= (data[3-i] & 0xff) << (i << 3);
-								//								}
-
-								// now we know the length of the payload
-								//								byte[] buffer = new byte[len];
-								//								packet = new DatagramPacket(buffer, buffer.length);
-
-								//								socket.receive(packet);
-
-
-
-								//								System.out.println("GOSSIP RESULT Q1: " + gossip.getActiveNodes() / gossip.getActiveNodesWeight());
-								//								System.out.println("GOSSIP RESULT Q2: " + gossip.getActiveUsers() / gossip.getActiveUsersWeight());
-								//								System.out.println("GOSSIP RESULT Q3: " + gossip.getAverageFiles() / gossip.getAverageFilesWeight());
-								//								System.out.println("GOSSIP RESULT Q4: " + gossip.getAverageMb() / gossip.getAverageMbWeight());
-
+											
 							} catch (SocketException e) {
 								//e.printStackTrace();
 							} catch (UnknownHostException e) {
@@ -390,114 +372,84 @@ public class Client {
 					public void run(){ //tenho ip porta
 
 						Socket clientSocket = null;
-						int rounds = 0;
+						
+						
+						
 						while(true) {
+
+							
 							try {
-
-
 
 								URL url = getGossipPeer();
 								clientSocket = new Socket(url.getHost(), url.getPort() + 1);
+								
 
-								//criar mensagens para enviar
-								DatagramPacket packet = null; 
-								byte[] serialized;
 								List<Message> messages = new ArrayList<Message>();
 								messages.add(gossip.getMessage(MessageType.Q1));
 								messages.add(gossip.getMessage(MessageType.Q2));
 								messages.add(gossip.getMessage(MessageType.Q3));
-								messages.add(gossip.getMessage(MessageType.Q4));
+								messages.add(gossip.getMessage(MessageType.Q4));	
 
+								//System.out.println("HOST: " + url.getHost());
+								/*
+								//NOVO	
+								final double ERROR = 0.001;
+								
+								if(gossip.approx(MessageType.Q3) == ERROR) {
+									Message msg  = gossip.getLogOutMessage(MessageType.Q3);
+									
+									ObjectOutputStream outToServer = new ObjectOutputStream(clientSocket.getOutputStream());
+									outToServer.writeObject(msg);
+									
+									gossip.resetQueryAverageFiles();
+								
+									System.out.println("REINICIOU Q3");
+								
+								
+								} 
 
-								System.out.println("HOST: " + url.getHost());
-
-
-
-
+								if(gossip.approx(MessageType.Q4) == ERROR) {
+									Message msg = gossip.getLogOutMessage(MessageType.Q4);
+									
+									ObjectOutputStream outToServer = new ObjectOutputStream(clientSocket.getOutputStream());
+									outToServer.writeObject(msg);
+									gossip.resetQueryAverageMb();
+									
+									System.out.println("REINICIOU Q4");
+								}
+								*/
 								for(Message msg : messages){
 
 									System.out.println("MESSAGE SENT: " + msg.toString());
-
-									//									serialized = (UDPSerialization(msg));
-
-									//packet = new DatagramPacket(serialized, serialized.length,InetAddress.getByName(url.getHost()),url.getPort());
 
 									ObjectOutputStream outToServer = new ObjectOutputStream(clientSocket.getOutputStream());
 									outToServer.writeObject(msg);
 
 								}
+								
+								System.out.println("GOSSIP 1 AVERAGE: " + gossip.average(MessageType.Q1));
+								System.out.println("GOSSIP 2 AVERAGE: " + gossip.average(MessageType.Q2));
+								System.out.println("GOSSIP 3 AVERAGE: " + gossip.average(MessageType.Q3));
+								System.out.println("GOSSIP 4 AVERAGE: " + gossip.average(MessageType.Q4));
+								System.out.println("");
+								System.out.println("");
 
+								Thread.sleep(8000);
+								
+							
+								
+							
 								clientSocket.close();
-
-
-								//System.out.println("ROUNDS: " + rounds);
-
-								//								if(gossip.approx(value/weight, (gossip.getActiveNodes()/gossip.getActiveNodesWeight()))) {
-								//									rounds = 0;
-								//									if(username2.equals("admin")) {
-								//										gossip.setQ1Values(1, 1);
-								//									} else {
-								//										gossip.setQ1Values(1, 0);
-								//									}
-								//								}
-								//								
-								//								value = gossip.getActiveNodes();
-								//								weight = gossip.getActiveNodesWeight();
-								//								
-								//								rounds++;
 
 							} catch (Exception e) {
 								//e.printStackTrace();	
 							} finally {
-								//socket.close();
-							}
-
-							try {
-								Thread.sleep(1000);
-							} catch (InterruptedException e) {
-								e.printStackTrace();
-							}
-
-							System.out.println("GOSSIP 1 AVERAGE: " + gossip.getActiveNodes() / gossip.getActiveNodesWeight());
-							System.out.println("GOSSIP 2 AVERAGE: " + gossip.getActiveUsers() / gossip.getActiveUsersWeight());
-							System.out.println("GOSSIP 3 AVERAGE: " + gossip.getAverageFiles() / gossip.getAverageFilesWeight());
-							System.out.println("GOSSIP 4 AVERAGE: " + gossip.getAverageMb() / gossip.getAverageMbWeight());
-
-							double Q3 = (gossip.getAverageFiles() / gossip.getAverageFilesWeight()); 
-							double Q4 = (gossip.getAverageMb() / gossip.getAverageMbWeight());
-									
-							if(gossip.approx(Q3, (gossip.getActiveNodes()/gossip.getActiveNodesWeight()))) {
-							
-							} 
-							
-							if(gossip.approx(Q4, (gossip.getActiveNodes()/gossip.getActiveNodesWeight()))) {
-								
 								
 							}
 
+
 						}
 
-
-					}
-
-					public byte[] UDPSerialization(Message q) {
-
-						//System.out.println("UDPSerialization - MESSAGE: " + "value: " + q.getValue() + "weight: " + q.getWeight());
-
-						ByteArrayOutputStream bStream = new ByteArrayOutputStream();
-						ObjectOutput oo = null;
-						try {
-
-							oo = new ObjectOutputStream(bStream);
-							oo.writeObject(q);
-							oo.flush();
-							bStream.flush();
-
-
-						} catch (IOException e) {
-							e.printStackTrace();
-						}
-						return bStream.toByteArray();    	
 
 					}
 
@@ -530,7 +482,7 @@ public class Client {
 			//chama funcao que faz download do ficheiro peers global
 		}
 
-		Fs fs = Fs.initializeFuse(chord, folder, false);
+		//Fs fs = Fs.initializeFuse(chord, folder, false);
 
 	}
 

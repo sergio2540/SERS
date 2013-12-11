@@ -5,294 +5,338 @@ import gossip.message.MessageType;
 
 import java.io.IOException;
 
+import chord.Client;
+
 public class Gossip {
 
-	private double valueQ1;
-	private double weightQ1;
-	
-	private double valueQ2;
-	private double weightQ2;
-	
-	private double valueQ3;
-	private double weightQ3;
-	
-	private double valueQ4;
-	private double weightQ4;
-	
 	private double activeNodes;
 	private double activeNodesWeight;
-	
+	private double lastActiveNodes;
+	private double lastActiveNodesWeight;
+	private double resetActiveNodes;
+	private double resetActiveNodesWeight;
+
 	private double activeUsers;
 	private double activeUsersWeight;
-	
+	private double lastActiveUsers;
+	private double lastActiveUsersWeight;
+
+	private double resetActiveUsers;
+	private double resetActiveUsersWeight;
+
 	private double averageFiles;
-	private double averageFilesWeight; 
-	
+	private double averageFilesWeight;
+
+	private double lastAverageFiles;
+	private double lastAverageFilesWeight; 
+
+	private double resetAverageFiles;
+	private double resetAverageFilesWeight; 
+
 	private double averageMb;
 	private double averageMbWeight;
-	
+
+	private double lastAverageMb;
+	private double lastAverageMbWeight; 
+
+	private double resetAverageMb;
+	private double resetAverageMbWeight;
+
 	public Gossip(){}
-	
-	public void setValues(double activeNodes, double activeNodesWeight, double activeUsers, double activeUsersWeight, double averageFiles, double averageFilesWeight, double averageMb, double averageMbWeight ) {
+
+	public void initActiveNodes(double activeNodes, double activeNodesWeight){
 		this.activeNodes = activeNodes;
 		this.activeNodesWeight = activeNodesWeight;
+
+		this.resetActiveNodes = activeNodes;
+		this.resetActiveNodesWeight = activeNodesWeight;
+	}
+
+	public void initActiveUsers(double activeUsers, double activeUsersWeight){
 		this.activeUsers = activeUsers;
 		this.activeUsersWeight = activeUsersWeight;
+
+		this.resetActiveUsers = activeUsers;
+		this.resetActiveUsersWeight = activeUsersWeight;
+	}
+
+	public void initAverageFiles(double averageFiles, double averageFilesWeight){
 		this.averageFiles = averageFiles;
 		this.averageFilesWeight = averageFilesWeight;
+
+		//nao recisa de valores de reset
+	}
+	public void initAverageMb(double averageMb, double averageMbWeight){
 		this.averageMb = averageMb;
 		this.averageMbWeight = averageMbWeight;
+
+		//nao recisa de valores de reset
 	}
-	
-	public void setQ1Values(double activeNodes, double activeNodesWeight) {
+
+	public void setQueryActiveNodesValues(double activeNodes, double activeNodesWeight) {
+
+		//this.activeNodes -> antigo valor
+		//activeNode -> novo valor
+
+		this.lastActiveNodes = this.activeNodes;
+		this.lastActiveNodesWeight = this.activeNodesWeight;
+
 		this.activeNodes = activeNodes;
 		this.activeNodesWeight = activeNodesWeight;
-		
-		this.valueQ1 = activeNodes;
-		this.weightQ1 = activeNodesWeight;
-		
-	}
-	
 
-	public void setQ2Values(double activeUsers, double activeUsersWeight) {
+	}
+
+
+	public void setQueryActiveUsersValues(double activeUsers, double activeUsersWeight) {
+
+		this.lastActiveUsers = this.activeUsers;
+		this.lastActiveUsersWeight = this.activeUsersWeight;
+
 		this.activeUsers = activeUsers;
 		this.activeUsersWeight = activeUsersWeight;
-		
-		this.valueQ2 = activeUsers;
-		this.weightQ2 = activeUsersWeight;
-		
+
 	}
 
-	public void setQ3Values( double averageFiles, double averageFilesWeight) {
+	public void setQueryAverageFilesValues(double averageFiles, double averageFilesWeight) {
+
+		this.lastAverageFiles = this.averageFiles;
+		this.lastAverageFilesWeight = this.averageFilesWeight;
+
 		this.averageFiles = averageFiles;
 		this.averageFilesWeight = averageFilesWeight;
-		
-		this.valueQ3 = averageFiles;
-		this.weightQ3 = averageFilesWeight;
-		
+
 	}
 
-	public void setQ4Values(double averageMb, double averageMbWeight) {
+	public void setQueryAverageMbValues(double averageMb, double averageMbWeight) {
+
+		this.lastAverageMb = this.averageMb;
+		this.lastAverageMbWeight = this.averageMbWeight;
+
 		this.averageMb = averageMb;
 		this.averageMbWeight = averageMbWeight;
-		
-		this.valueQ4 = averageMb;
-		this.weightQ4 = averageMbWeight;
-		
-	}
-	
-	public boolean approx(double value1, double value2) {
-		
-		final double ERROR = 0.01;
-		
-		if(Math.abs(value1-value2) < ERROR){
-			return true;
-		}else{
-			return false;
-		}
-	
-	}
-	
-	public void resetQ1() {
-		
-		this.activeNodes = this.valueQ1;
-		this.activeNodesWeight = this.weightQ1;
-		
-	}
-	
-	public double getActiveNodes() {
-		return activeNodes;
+
 	}
 
-	private void setActiveNodes(double activeNodes) {
-		this.activeNodes = activeNodes;
+	public void resetQueryActiveNodes() {
+
+		this.activeNodes = this.resetActiveNodes;
+		this.activeNodesWeight = this.resetActiveNodesWeight;
+
 	}
 
-	public double getActiveNodesWeight() {
-		return activeNodesWeight;
+	public void resetQueryActiveUsers() {
+
+		this.activeUsers = this.resetActiveUsers;
+		this.activeUsersWeight = this.resetActiveUsersWeight;
+
 	}
 
-	private void setActiveNodesWeight(double activeNodesWeight) {
-		this.activeNodesWeight = activeNodesWeight;
+	public void resetQueryAverageFiles() {
+
+		this.averageFiles = Client.getNumberOfFiles();
+		this.averageFilesWeight = 1;
+
 	}
 
-	public double getActiveUsers() {
-		return activeUsers;
-	}
+	public void resetQueryAverageMb() {
 
-	private void setActiveUsers(double activeUsers) {
-		this.activeUsers = activeUsers;
-	}
+		this.averageMb = Client.getNumberOfFileMBytes();
+		this.averageMbWeight = 1;
 
-	public double getActiveUsersWeight() {
-		return activeUsersWeight;
-	}
-
-	private void setActiveUsersWeight(double activeUsersWeight) {
-		this.activeUsersWeight = activeUsersWeight;
-	}
-
-	public double getAverageFiles() {
-		return averageFiles;
-	}
-
-	private void setAverageFiles(double averageFiles) {
-		this.averageFiles = averageFiles;
-	}
-
-	public double getAverageFilesWeight() {
-		return averageFilesWeight;
-	}
-
-	private void setAverageFilesWeight(double averageFilesWeight) {
-		this.averageFilesWeight = averageFilesWeight;
-	}
-
-	public double getAverageMb() {
-		return averageMb;
-	}
-
-	private void setAverageMb(double averageMb) {
-		this.averageMb = averageMb;
-	}
-
-	public double getAverageMbWeight() {
-		return averageMbWeight;
-	}
-
-	private void setAverageMbWeight(double averageMbWeight) {
-		this.averageMbWeight = averageMbWeight;
 	}
 
 	public synchronized void processMessage(Message m) {
-		
+
 		switch(m.getMsgType()) {
-		
+
 		case Q1: 
-				
-			setActiveNodes(getActiveNodes() + m.getValue());
-			setActiveNodesWeight(getActiveNodesWeight() + m.getWeight());
-			
+
+			//devia guardar valor anterior???
+			this.activeNodes = this.activeNodes + m.getValue();
+			this.activeNodesWeight = this.activeNodesWeight + m.getWeight();
 			break;
-			
+
 		case Q2:
-			
-			setActiveUsers(getActiveUsers() + m.getValue());
-			setActiveUsersWeight(getActiveUsersWeight() + m.getWeight());
-			
+
+			this.activeUsers = this.activeUsers + m.getValue();
+			this.activeUsersWeight = this.activeUsersWeight + m.getWeight();
 			break;
-			
+
 		case Q3:
-			
-			setAverageFiles(getAverageFiles() + m.getValue());
-			setAverageFilesWeight(getAverageFilesWeight() + m.getWeight());
-			
+
+			this.averageFiles = this.averageFiles + m.getValue();
+			this.averageMbWeight = this.averageMbWeight + m.getWeight();
 			break;
-			
+
 		case Q4:
-			
-			setAverageMb(getAverageMb() + m.getValue());
-			setAverageMbWeight(getAverageMbWeight() + m.getWeight());
-			
+
+			this.averageMbWeight = this.averageMbWeight + m.getValue();
+			this.averageMbWeight = this.averageMbWeight + m.getWeight();
 			break;
-			
+
 		default: System.out.println("Query type is invalid.");
-			break;
-		
+		break;
+
 		}
-		
+
 	}
-	
-	
-	
+
+
+
 	//Remover setQ1 pq cliente pode nao receber
-	
+
 	public synchronized Message getMessage(MessageType type) {
-		
+
 		Message msg = null;
-		
+
 		switch(type) {
-		
+
 		case Q1: 
-			msg = new Message(type, getActiveNodes()/2, getActiveNodesWeight()/2);
-			setQ1Values(activeNodes, activeNodesWeight);
-			
+
+			msg = new Message(type, this.activeNodes/2, this.activeNodesWeight/2);
+			setQueryActiveNodesValues(this.activeNodes/2, this.activeNodesWeight/2);
 			break;
-		
+
 		case Q2:
-			
-			msg = new Message(type, getActiveUsers()/2, getActiveUsersWeight()/2);
-			
-			setQ2Values(getActiveUsers()/2, getActiveUsersWeight()/2);
-			
+
+			msg = new Message(type, this.activeUsers/2,this.activeUsersWeight/2);
+
+			setQueryActiveUsersValues(this.activeUsers/2, this.activeUsersWeight/2);
+
 			break;
-			
+
 		case Q3:
-			
-			msg = new Message(type, getAverageFiles()/2, getAverageFilesWeight()/2);
-			
-			setQ3Values(getAverageFiles()/2, getAverageFilesWeight()/2);
-			
+
+			msg = new Message(type, this.averageFiles/2, this.averageFilesWeight/2);
+
+			setQueryAverageFilesValues(this.averageFiles/2, this.averageFilesWeight/2);
+
 			break;
-			
+
 		case Q4: 
-			
-			msg = new Message(type, getAverageMb()/2, getAverageMbWeight()/2);
-			
-			setQ4Values(getAverageMb()/2, getAverageMbWeight()/2);
-			
+
+			msg = new Message(type, this.averageMb/2, this.averageMbWeight/2);
+			setQueryAverageMbValues(this.averageMb/2, this.averageMbWeight/2);
+
 			break;
-			
+
 		default:
-			
-				System.out.println("Invalid query for processing.");
-				msg = new Message(type);
-				
+
+			System.out.println("Invalid query for processing.");
+			msg = new Message(type);
+
 			break;
 
 		}
-		
+
 		return msg;
-		
+
 	}
-	
-public synchronized Message getLogOutMessage(MessageType type) {
-		
+
+	public synchronized Message getLogOutMessage(MessageType type) {
+
 		Message msg = null;
-		
+
 		switch(type) {
-		
+
 		case Q1: 
 			//this.valueQ1 == valor inicial
-			msg = new Message(type, Math.abs(this.valueQ1 - getActiveNodes()), getActiveNodesWeight()-1);
+			msg = new Message(type, Math.abs(this.lastActiveNodes - this.activeNodes), this.activeNodesWeight - 1);
 			break;
-		
+
 		case Q2:
-			
-			msg = new Message(type, Math.abs(this.valueQ2 - getActiveUsers()), getActiveUsersWeight()-1);
+
+			msg = new Message(type, Math.abs(this.lastActiveUsers - this.activeUsers), this.activeUsersWeight - 1);
 			break;
-			
+
 		case Q3:
-			
-			msg = new Message(type, Math.abs(this.valueQ3 - getAverageFiles()), getAverageFilesWeight()-1);
+
+			msg = new Message(type, Math.abs(this.lastAverageFiles - this.averageFiles), this.averageFilesWeight - 1);
 			break;
-			
+
 		case Q4: 
-			
-			msg = new Message(type,  Math.abs(this.valueQ4 - getAverageMb()), getAverageMbWeight()-1);
+			msg = new Message(type,  Math.abs(this.lastAverageMbWeight - this.averageMb), this.averageMbWeight - 1);
 			break;
-			
+
 		default:
-			
-				System.out.println("Invalid query for processing.");
-				msg = new Message(type);
-				
+
+			System.out.println("Invalid query for processing.");
+			msg = new Message(type);
+
 			break;
 
 		}
-		
+
 		return msg;
-		
+
 	}
-	
+
+	public double approx(MessageType type) {
+
+
+		switch(type) {
+
+		case Q1:
+
+			return Math.abs(this.lastActiveNodes - this.activeNodes);
+
+
+
+		case Q2:
+
+			return Math.abs(this.lastActiveUsers - this.activeUsers);
+
+
+		case Q3:
+
+			return Math.abs(this.lastAverageFiles - this.averageFiles);
+
+
+
+		case Q4: 
+			return Math.abs(this.lastAverageMbWeight - this.averageMb);
+
+		default:
+
+			System.out.println("Invalid query for processing.");
+			return Integer.MAX_VALUE;
+
+		}
+
+	}
+
+	public double average(MessageType type) {
+
+
+		switch(type) {
+
+		case Q1:
+
+			return this.activeNodes/this.activeNodesWeight;
+
+
+
+		case Q2:
+
+			return this.activeUsers/this.activeUsersWeight;
+
+
+		case Q3:
+
+			return this.averageFiles/this.averageFilesWeight;
+
+
+
+		case Q4: 
+			return this.averageMb/this.averageMbWeight;
+
+		default:
+
+			System.out.println("Invalid query for processing.");
+			return Integer.MAX_VALUE;
+
+		}
+
+	}
+
 }
