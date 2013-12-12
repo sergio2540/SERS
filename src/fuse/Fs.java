@@ -2,6 +2,7 @@ package fuse;
 
 
 import java.io.ByteArrayOutputStream;
+import java.io.File;
 import java.io.IOException;
 import java.io.Serializable;
 import java.nio.ByteBuffer;
@@ -847,10 +848,10 @@ public class Fs extends FuseFilesystemAdapterAssumeImplemented {
 
 	}
 
-	//	@Override
-	//	public void afterUnmount(final File mountPoint) {
-	//		mountPoint.delete();
-	//	}
+	@Override
+	public void afterUnmount(final File mountPoint) {
+		mountPoint.delete();
+	}
 
 
 

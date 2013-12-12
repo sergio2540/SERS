@@ -237,9 +237,5 @@ public class PeersFile {
 		}
 		
 	}
-	
-	
-	
-	
 
 }

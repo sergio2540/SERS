@@ -1,7 +1,9 @@
 package chord;
 
+import java.io.BufferedReader;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.Serializable;
@@ -69,55 +71,76 @@ public class Client {
 		}
 		return new String(hexChars);
 	}
-
+	
 	private static byte[] getMacAdress() {
-
-		InetAddress ip;
-
-		StringBuilder sb = null;
-
+		
+		byte[] macInBytes = null;
+		
 		try {
-
-			ip = InetAddress.getLocalHost();
-			//System.out.println("Current IP address : " + ip.getHostAddress());
-			Enumeration<NetworkInterface> nets = NetworkInterface.getNetworkInterfaces();
-			NetworkInterface netint;
-			List<InterfaceAddress> interfaces = new ArrayList<InterfaceAddress>();
-
-			while(nets.hasMoreElements()) {
-				netint = nets.nextElement();
-				interfaces.addAll(netint.getInterfaceAddresses());
-			}
-
-			//for(InterfaceAddress intAddr : interfaces){
-			//	System.out.println("| " + intAddr.toString() + " |");
-			//}
-
-			ip = InetAddress.getByAddress(interfaces.get(1).getAddress().getAddress());
-			NetworkInterface network = NetworkInterface.getByInetAddress(ip);
-
-			if(network == null) {
-				System.out.println("NULL");
-				return "".getBytes();
-			}
-
-			byte[] mac = network.getHardwareAddress();
-
-			sb = new StringBuilder();
-
-			for (int i = 0; i < mac.length; i++) {
-				sb.append(String.format("%02X%s", mac[i], (i < mac.length - 1) ? "-" : ""));		
-			}
-
-			//System.out.println(sb.toString());
-
-		} catch (UnknownHostException | SocketException e) {
+			
+			String[] command = {"/bin/sh", "-c", "ip link show eth0 | awk '/ether/ {print $2}'"};
+		    Process pid = Runtime.getRuntime().exec(command);
+		    
+		    BufferedReader in = new BufferedReader(new InputStreamReader(pid.getInputStream()));
+			macInBytes =  in.readLine().getBytes();
+			
+			
+		} catch (IOException e) {
 			e.printStackTrace();
 		}
-
-		return sb.toString().getBytes();
-
+	
+		return macInBytes;
+	    
 	}
+
+//	private static byte[] getMacAdress() {
+//
+//		InetAddress ip;
+//
+//		StringBuilder sb = null;
+//
+//		try {
+//
+//			ip = InetAddress.getLocalHost();
+//			//System.out.println("Current IP address : " + ip.getHostAddress());
+//			Enumeration<NetworkInterface> nets = NetworkInterface.getNetworkInterfaces();
+//			NetworkInterface netint;
+//			List<InterfaceAddress> interfaces = new ArrayList<InterfaceAddress>();
+//
+//			while(nets.hasMoreElements()) {
+//				netint = nets.nextElement();
+//				interfaces.addAll(netint.getInterfaceAddresses());
+//			}
+//
+//			//for(InterfaceAddress intAddr : interfaces){
+//			//	System.out.println("| " + intAddr.toString() + " |");
+//			//}
+//
+//			ip = InetAddress.getByAddress(interfaces.get(1).getAddress().getAddress());
+//			NetworkInterface network = NetworkInterface.getByInetAddress(ip);
+//
+//			if(network == null) {
+//				System.out.println("NULL");
+//				return "".getBytes();
+//			}
+//
+//			byte[] mac = network.getHardwareAddress();
+//
+//			sb = new StringBuilder();
+//
+//			for (int i = 0; i < mac.length; i++) {
+//				sb.append(String.format("%02X%s", mac[i], (i < mac.length - 1) ? "-" : ""));		
+//			}
+//
+//			//System.out.println(sb.toString());
+//
+//		} catch (UnknownHostException | SocketException e) {
+//			e.printStackTrace();
+//		}
+//
+//		return sb.toString().getBytes();
+//
+//	}
 
 	private static int generateRandomPort(int higher, int lower) {
 
@@ -186,7 +209,16 @@ public class Client {
 		final int port = generateRandomPort(HIGHPORT, LOWPORT);
 		try {
 			//TODO: trocar localhost para ip da maquina
-			localURL = new URL(protocol + "://localhost:" + port + "/");
+			
+			InetAddress myself = null;
+			try {
+				myself = InetAddress.getLocalHost();
+			} catch (UnknownHostException e) {
+				e.printStackTrace();
+			}
+					System.out.println(myself.getHostAddress());
+			
+			localURL = new URL(protocol + "://" + myself.getHostAddress() + ":" + port + "/");
 
 		} catch(MalformedURLException e) {
 			System.out.println(e.getMessage());
@@ -228,6 +260,8 @@ public class Client {
 		for(URL url : peersList) {
 			try {
 
+				System.out.println(url.getHost() + url.getPort());
+				
 				ByteArrayOutputStream macAndUser = new ByteArrayOutputStream();
 				macAndUser.write(mac);
 				macAndUser.write(username.getBytes());
@@ -520,8 +554,10 @@ public class Client {
 				break; //sai da lista de peers se conseguir fazer join
 
 			} catch (ServiceException e) {
+				e.printStackTrace();
 				peersToBeRemoved.add(url);
 			} catch (Exception e) {
+				e.printStackTrace();
 				System.out.println(e.getMessage());
 			}
 
@@ -542,7 +578,7 @@ public class Client {
 			//chama funcao que faz download do ficheiro peers global
 		}
 
-		//Fs fs = Fs.initializeFuse(chord, folder, false);
+		Fs fs = Fs.initializeFuse(chord, folder, false);
 
 	}
 
