@@ -14,9 +14,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import chord.HbaseManager;
 import chord.Metadata;
 import chord.MetadataType;
 import chord.MyKey;
+import chord.PeersFile;
 import de.uniba.wiai.lspi.chord.com.Entry;
 import de.uniba.wiai.lspi.chord.com.Node;
 import de.uniba.wiai.lspi.chord.data.ID;
@@ -40,6 +42,9 @@ public class Fs extends FuseFilesystemAdapterAssumeImplemented {
 
 	private static Fs fs;
 	private Chord chord;
+	private URL userURL;
+	private HbaseManager manager;
+	private PeersFile file;
 
 	//private static String content = "";
 
@@ -47,19 +52,38 @@ public class Fs extends FuseFilesystemAdapterAssumeImplemented {
 	//private byte buffer[] = new byte[BLOCKSIZE];
 	//private ByteBuffer byteBuffer = ByteBuffer.allocate(BLOCKSIZE);
 
+	public URL getUserURL() {
+		return userURL;
+	}
+
+	public void setUserURL(URL userURL) {
+		this.userURL = userURL;
+	}
+
+	public HbaseManager getManager() {
+		return manager;
+	}
+
+	public void setManager(HbaseManager manager) {
+		this.manager = manager;
+	}
+
 	public Fs() {}
 
-	private Fs(Chord chord, String path) {
+	private Fs(Chord chord, String path, URL userURL, HbaseManager manager, PeersFile file) {
 		this.chord = chord;
-	
+		this.userURL = userURL;
+		this.manager = manager;
+		this.file = file;
+
 	}   
 
-	public static Fs initializeFuse(Chord chord, String path, boolean debug) {
+	public static Fs initializeFuse(Chord chord, String path, boolean debug, URL userURL, HbaseManager manager, PeersFile file) {
 
 		System.out.println("function initializeFuse (Fs.java)");
 
 		if(fs == null) {
-			fs = new Fs(chord, path);
+			fs = new Fs(chord, path, userURL, manager, file);
 		}
 
 		try {
@@ -131,17 +155,17 @@ public class Fs extends FuseFilesystemAdapterAssumeImplemented {
 	{
 
 		//String content = "";
-	
+
 		System.out.println("function read (Fs.java)");
 		System.out.println("SIZE: " + size);
 		System.out.println("OFFSET: " + offset);
-		
+
 		//2100/1024 = indice 2 bloco
 		int beginOffSet = (int) offset/(BLOCKSIZE-1);
 
 		// (1048 + 2100) /1024 = indice 3 bloco
 		int endOffSet = (int ) ((size + offset) / (BLOCKSIZE));
-		
+
 		//System.out.println("----read start---");
 		//System.out.println("path: " + path);
 		//System.out.println("----read---");
@@ -165,77 +189,77 @@ public class Fs extends FuseFilesystemAdapterAssumeImplemented {
 				return -ErrorCodes.ENOENT();
 
 			} 
-			
-			
-			
 
-				for(Serializable data : dataSet) {
-					metaInfo = data.toString().split("\n");
-					//fileOrDir = metaInfo[0];
+
+
+
+			for(Serializable data : dataSet) {
+				metaInfo = data.toString().split("\n");
+				//fileOrDir = metaInfo[0];
+			}
+
+
+
+			//if(fileOrDir.equals("DIR")) {
+			//	System.out.println("function read - Fs.java");
+			//	return -ErrorCodes.EISDIR();
+			//} else if(fileOrDir.equals("FILE")) {
+
+
+
+			System.out.println("INFO SIZE DO FILE: " + metaInfo[1]);
+
+			for(int i = beginOffSet + 2; i <= endOffSet+2; i++) {
+				//System.out.println("Bloco n" + (i-2));
+				list.addAll(chord.retrieve(new MyKey(metaInfo[i])));
+
+			}
+
+			for(Serializable data : list) {
+				//System.out.println("READ-------------" + data.toString());
+				try {
+					bos.write((byte[]) data);
+				} catch (IOException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
 				}
+				//content += data.toString();
+			}
 
-	
+			//TODO: mudar o content
+			//content = content.trim();
 
-				//if(fileOrDir.equals("DIR")) {
-				//	System.out.println("function read - Fs.java");
-				//	return -ErrorCodes.EISDIR();
-				//} else if(fileOrDir.equals("FILE")) {
-				
-			
-				
-					System.out.println("INFO SIZE DO FILE: " + metaInfo[1]);
-					
-					for(int i = beginOffSet + 2; i <= endOffSet+2; i++) {
-						//System.out.println("Bloco n" + (i-2));
-						list.addAll(chord.retrieve(new MyKey(metaInfo[i])));
+			//System.out.println("CONTENT ON READ: " + content);
 
-					}
+			//}
 
-					for(Serializable data : list) {
-						//System.out.println("READ-------------" + data.toString());
-						try {
-							bos.write((byte[]) data);
-						} catch (IOException e) {
-							// TODO Auto-generated catch block
-							e.printStackTrace();
-						}
-						//content += data.toString();
-					}
 
-					//TODO: mudar o content
-					//content = content.trim();
-
-					//System.out.println("CONTENT ON READ: " + content);
-
-				//}
-
-			
 		} catch (ServiceException e) {
 			e.printStackTrace();
 		}
 
 		//System.out.println("entrou");
-		
+
 		//ByteArrayInputStream bis = new ByteArrayInputStream(bos.toByteArray());
 		//String content = new String(bos.toByteArray());
 		// Compute substring that we are being asked to read
 		//String s = content.substring((int) offset, (int) Math.max(offset, Math.min(content.length() - offset, offset + size)));
-		
+
 		byte [] buf = bos.toByteArray();
-		
+
 		//buffer.limit((int)bos.toByteArray().length);
 		System.out.println("L: " + buf.length);
-		
-		
+
+
 		//ByteArrayInputStream bis = new ByteArrayInputStream(buf);
 		//byte[] read = new byte[(int)bos.toByteArray().length];
 		//bis.read(read,(int)offset, (int)size);
 		//System.out.println("S:" + read.length);
-		
+
 		//byte [] read = Arrays.copyOfRange(buf, (int)0, (int)(size));
 		buffer.put(buf);
-		
-		
+
+
 		//System.out.println("saiu bytes: " + read[0]);
 
 		return (int)size;
@@ -291,7 +315,7 @@ public class Fs extends FuseFilesystemAdapterAssumeImplemented {
 
 	@Override
 	public int write(final String path, final ByteBuffer buf, final long bufSize, final long writeOffset, final FileInfoWrapper wrapper) {
-		
+
 		//bufsize = 1048
 		//writeoffset= 2100
 		//System.out.println("||||||||||||||||||||||||||||||||||||||||||||||||");
@@ -316,7 +340,7 @@ public class Fs extends FuseFilesystemAdapterAssumeImplemented {
 		MyKey fileKey = new MyKey(path);
 
 		Set<Serializable> fileSet = null;
-		
+
 		try {
 
 			fileSet = chord.retrieve(fileKey);
@@ -332,61 +356,61 @@ public class Fs extends FuseFilesystemAdapterAssumeImplemented {
 			}
 
 			//ArrayList<String> blocks = (ArrayList<String>) fileMetadata.getBlocksPaths();//-------------------sapateiro
-			
+
 			List<String> blocks = (List<String>) fileMetadata.getBlocksPaths();
 			//ArrayList<String> copy = new ArrayList<String>();
-			
+
 			//copia
 			//for(String temp : blocks){
-				//copy.add(temp);
+			//copy.add(temp);
 			//}
-			
+
 			int bufIndex = 0;
-			
+
 			ByteArrayOutputStream newBlock = new ByteArrayOutputStream(BLOCKSIZE);
 			//ByteArrayOutputStream oldBlock = new ByteArrayOutputStream(BLOCKSIZE);
-			
-		
-			
+
+
+
 			//2 .. 3
 			for(int blockNo = beginOffSet; blockNo <= endOffSet; blockNo++){
-				
+
 				//Reinicia buffers
 				newBlock.reset();
 				//oldBlock.reset();
 				int oldBlockLength = 0;
-				
+
 				//System.out.println("BLOCK: " + blockNo);
-				
+
 				//Arrays.fill(buffer, (byte) 0); //LIMPAR BYTEBUFFER????
 
 				//String content = "";
-				
+
 				//byte oldBuffer[] = new byte[BLOCKSIZE];
 
 				if(blockNo < blocks.size()) {
-					
+
 					//System.out.println("ja existe o bloco");
-					
+
 					String block = blocks.get(blockNo);
-					
+
 					Set<Serializable> data = chord.retrieve(new MyKey(block));
 					if(!data.isEmpty()) {
-						
+
 						//System.out.println("data is not empty");
-						
+
 						//System.out.println("copia o antigo");
-						
-					
-						
+
+
+
 						for(Serializable ser : data) {
 							//System.out.println("---------->" + new String((byte[])ser));
 							//oldBlock.write((byte[])ser);
 							oldBlockLength += ((byte[])ser).length; 
 							chord.remove(new MyKey(block), ser);
-					    }
-						
-						
+						}
+
+
 						//byte[] temp = content.getBytes();
 						//oldBlock.write(temp);
 						//newBlock.write(temp);
@@ -398,13 +422,13 @@ public class Fs extends FuseFilesystemAdapterAssumeImplemented {
 
 						//for(int index = 0 ;index < cursorStartByte; index++){
 						//	buffer[index] = oldBuffer[index];
-							//byteBuffer.put(index,oldBuffer[index]);//e se nao existir data 0 0 0 0 data
+						//byteBuffer.put(index,oldBuffer[index]);//e se nao existir data 0 0 0 0 data
 						//}
-						
-						
+
+
 						//for(Serializable ser : data) {
-							//System.out.println("-------------------------removeu data anterior" + block);
-							//chord.remove(new MyKey(block), ser);
+						//System.out.println("-------------------------removeu data anterior" + block);
+						//chord.remove(new MyKey(block), ser);
 						//}
 
 					}
@@ -429,7 +453,7 @@ public class Fs extends FuseFilesystemAdapterAssumeImplemented {
 					}
 
 					newBlock.write(buf.get(index2));
-					
+
 					//byteBuffer.put(index, buf.get(index2));
 				}
 
@@ -443,28 +467,28 @@ public class Fs extends FuseFilesystemAdapterAssumeImplemented {
 					newMetadata = Metadata.createMetadata(oldMetadata.toString());
 					//System.out.println("Inicio metadata do ficheiro: \n" + fileMetadata.getMetadata());
 				}
-				*/
-				
+				 */
+
 				// TODO: trocar isto
 				//trocar a funcao getSHA1 de sitio!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-				
+
 				byte[] buffer = newBlock.toByteArray();
-				
+
 				String shaBuffer = new String(Client.bytesToHex(Client.getSHA1(buffer)));
 
 				fileMetadata.updateBlock(blockNo, shaBuffer);
 
 				int blockDiff = newBlock.size() - oldBlockLength;
-				
+
 				//System.out.println("oldBuffer: "  + new String(oldBuffer).length());
 				//System.out.println("buffer: "  + new String(buffer).length());
-				
+
 				//System.out.println("blockDiff: " + blockDiff);
 
 				fileMetadata.inc(blockDiff);
 
 				//System.out.println("SHA: " + shaBuffer);
-				
+
 
 				//System.out.println("Nova metadata do ficheiro: \n" + newMetadata.getMetadata());
 
@@ -478,17 +502,17 @@ public class Fs extends FuseFilesystemAdapterAssumeImplemented {
 				//System.out.println("Content do ficheiro: "  + new String(buffer));
 
 			}
-			
-		
+
+
 			chord.insert(fileKey, fileMetadata.getMetadata());
 
 		} catch(Exception e) {
 			System.out.println("ERRO-----" + e.getMessage());
 		}
 
-		
-		
-		
+
+
+
 		//System.out.println("||||||||||||||||||||||||||||||||||||||||||||||||");
 
 		return (int) bufSize;
@@ -848,11 +872,22 @@ public class Fs extends FuseFilesystemAdapterAssumeImplemented {
 
 	}
 
+	@Override 
+	public void beforeUnmount(final File mountpoint) {
+//		manager.prepareDB();
+//		manager.delete(userURL.getProtocol() + "://" + userURL.getHost() + ":" + userURL.getPort() + "/");
+//		try {
+//			manager.cleanUp();
+//		} catch (IOException e) {
+//			e.printStackTrace();
+//		}
+		file.removePeerInPeersList(userURL);
+		file.save();
+	}
+
 	@Override
 	public void afterUnmount(final File mountPoint) {
 		mountPoint.delete();
 	}
-
-
 
 }

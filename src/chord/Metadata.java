@@ -39,6 +39,8 @@ public class Metadata {
 
 	public static Metadata createMetadata(String metadata) {
 
+		System.out.println("METDATA EM STRING: " + metadata);
+		
 		String [] splittedMetadata = metadata.split("\n");
 		Collection<String> files;
 		Collection<String> blocks;

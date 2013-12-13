@@ -20,10 +20,15 @@ import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Enumeration;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
+import java.util.TreeMap;
+
+import org.jboss.netty.channel.local.LocalAddress;
+import org.jruby.compiler.ir.operands.Hash;
 
 import de.uniba.wiai.lspi.chord.com.Entry;
 import de.uniba.wiai.lspi.chord.com.Node;
@@ -42,9 +47,13 @@ public class Client {
 	static int N = 15;
 	static int HIGHPORT = 49151;
 	static int LOWPORT = 1024;
+	static int DNSMAX = 15;
 
 	private static Chord chord;
+	
+	static URL localURL = null;
 
+	private static HbaseManager manager;
 	public static byte[] getSHA1(byte[] username) {
 
 		MessageDigest mDigest = null;
@@ -181,7 +190,10 @@ public class Client {
 			System.exit(1);
 		}
 
-		Collection<URL> peersList;
+		
+		manager = new HbaseManager();
+		manager.prepareDB();
+		Collection<URL> peersList = null;
 		Collection<URL> peersToBeRemoved = new ArrayList<URL>();
 
 		//username and mounting point
@@ -200,12 +212,12 @@ public class Client {
 
 		PropertiesLoader.loadPropertyFile();
 
-		PeersFile peersFile = new PeersFile("https://dl.dropboxusercontent.com/u/23827391/peers", "peers");
-		peersList = peersFile.getPeersList();
+		//PeersFile peersFile = new PeersFile("https://dl.dropboxusercontent.com/u/23827391/peers", "peers");
+		PeersFile peersFile = null;
 
 		chord = new ChordImpl();
 		String protocol = URL.KNOWN_PROTOCOLS.get(URL.SOCKET_PROTOCOL);
-		URL localURL = null;
+		
 		final int port = generateRandomPort(HIGHPORT, LOWPORT);
 		try {
 			//TODO: trocar localhost para ip da maquina
@@ -218,7 +230,7 @@ public class Client {
 			}
 					System.out.println(myself.getHostAddress());
 			
-			localURL = new URL(protocol + "://" + myself.getHostAddress() + ":" + port + "/");
+			localURL = new URL(protocol + "://" + "localhost" + ":" + port + "/");
 
 		} catch(MalformedURLException e) {
 			System.out.println(e.getMessage());
@@ -233,17 +245,22 @@ public class Client {
 			System.exit(1);
 		}
 
-
 		if(username.equals("superadmin")) {
 
 			try {
+				
 				ByteArrayOutputStream macAndUser = new ByteArrayOutputStream();
 				macAndUser.write(mac);
 				macAndUser.write(username.getBytes());
 				chord.create(localURL, new ID(getSHA1(macAndUser.toByteArray())));
 				System.out.println("Create executed!");
-				peersFile.prependPeerToPeerList(localURL);
-				peersFile.save();
+				manager.prepareDB();
+				manager.insert(protocol + "://" + localURL.getHost() + ":" + localURL.getPort() + "/");
+				manager.cleanUp();
+				peersFile = new PeersFile("peers");
+				//peersList = peersFile.getPeersList();
+				//peersFile.prependPeerToPeerList(localURL);
+				//peersFile.save();
 				while(true);
 			} catch (ServiceException e) {
 				e.printStackTrace();
@@ -252,6 +269,9 @@ public class Client {
 			}
 
 		}
+		
+		peersFile = new PeersFile("peers");
+		peersList = peersFile.getPeersList();
 
 		if(peersList.isEmpty()) {
 			System.out.println("PeersList empty!");
@@ -278,7 +298,11 @@ public class Client {
 					Set<Serializable> data = chord.retrieve(keyRoot);
 					firstTime = data.isEmpty();
 
+					
+					
 					//if(firstTime) {
+					
+				
 					
 					gossip.initActiveNodes(1,1);
 					
@@ -288,6 +312,10 @@ public class Client {
 					
 					chord.insert(keyRoot, keyRootContent);
 					//} else {
+					manager.prepareDB();
+					manager.insert(protocol + "://" +localURL.getHost() + ":" + localURL.getPort() + "/");
+					manager.cleanUp();
+					
 					//gossip.setValues(1, 1, 1, 1, 9, 1, (double)Integer.parseInt(args[2]), 1);//os dois ultimos deviam ser os tamanhos dos ficheiros	
 					//}
 
@@ -436,6 +464,7 @@ public class Client {
 								
 								System.out.println("");
 								System.out.println("");
+								
 								System.out.println("GOSSIP 1 AVERAGE: " + gossip.average(MessageType.Q1));
 								System.out.println("GOSSIP 3 AVERAGE: " + gossip.average(MessageType.Q3));
 								System.out.println("GOSSIP 4 AVERAGE: " + gossip.average(MessageType.Q4));
@@ -470,7 +499,6 @@ public class Client {
 
 				udpSender.start();
 
-				/////////////////
 				Thread activeUsersUpdater = new Thread(new Runnable(){
 
 					@Override
@@ -488,17 +516,42 @@ public class Client {
 									System.out.println("ADMIN REINICIA COUNT E VISUALIZA SETS");
 									
 									Set<Serializable> activeUsersSet = chord.retrieve(activeUsersKey);
+									Set<String> activeUsers = new HashSet<String>();
+									int count = 0;
+									
+									String[] parsedSet;
+									String bestPeers = "";
+									
+									manager.prepareDB();
+									manager.deleteAll();
 									
 									for(Serializable ser : activeUsersSet) {
 										
 										chord.remove(activeUsersKey, ser);
 										
-										System.err.println("ACTIVE USERS: " + ser.toString());
+										
+										parsedSet = ser.toString().split(" ");
+										activeUsers.add(parsedSet[0]);
+										
+										if(count < DNSMAX) {
+											manager.insert(parsedSet[1]);
+										}
+										
+										count++;
+										
+										//System.err.println("ACTIVE USERS: " + ser.toString());
 									}
 									
-									System.err.println("COUNT ACTIVE USERS: " + activeUsersSet.size());
+									try {
+										manager.cleanUp();
+									} catch (IOException e) {
+										e.printStackTrace();
+									}
 									
-									chord.insert(activeUsersKey, username2);
+									System.err.println("COUNT ACTIVE USERS: " + activeUsers.size());
+									
+									chord.insert(activeUsersKey, username2 + " " + localURL.getProtocol() + "://" + 
+											localURL.getHost() + ":" + localURL.getPort() + "/");
 									
 									//visualização do set de users totais na rede
 									
@@ -506,16 +559,17 @@ public class Client {
 									
 									for(Serializable ser : usersSet) {
 										
-										System.err.println("USERS: " + ser.toString());
+										//System.err.println("USERS: " + ser.toString());
 										
 									}
 									
-									System.err.println("USERS COUNT: " + usersSet.size());
+									System.err.println("COUNT USERS: " + usersSet.size());
 									
 									
 								} else {
 									
-									chord.insert(activeUsersKey, activeUsersContent);
+									chord.insert(activeUsersKey, activeUsersContent + " " + localURL.getProtocol() + "://" + 
+									localURL.getHost() + ":" + localURL.getPort() + "/");
 									
 								}
 								
@@ -544,13 +598,7 @@ public class Client {
 				});
 
 				activeUsersUpdater.start();				
-				
-				
-				
-				
-				
-				/////////////////////////////7
-				
+
 				break; //sai da lista de peers se conseguir fazer join
 
 			} catch (ServiceException e) {
@@ -563,7 +611,6 @@ public class Client {
 
 		}
 
-
 		peersFile.removePeersInPeersList(peersToBeRemoved);
 		int peersInList = peersList.size();
 		//System.out.println("PEERS IN THE LIST OF PEERS" + peersInList);
@@ -572,47 +619,66 @@ public class Client {
 		peersFile.save();
 
 		//verfica se tem que ir buscar mais ips ao "DNS"
-		if((2/3) * N > peersInList) {
-
-
-			//chama funcao que faz download do ficheiro peers global
-		}
-
-		Fs fs = Fs.initializeFuse(chord, folder, false);
+//		if(peersInList < 2/3 * N) {
+//			System.out.println("peersInList < 2");
+//			peersFile.getPeersList().clear();//???????????????????????????????????????????????????
+//			peersFile.save();
+//			peersFile.getPeersFromDB();
+//
+//			//chama funcao que faz download do ficheiro peers global
+//		}
+		
+		Fs fs = Fs.initializeFuse(chord, folder, false, localURL, manager, peersFile);
 
 	}
 
 
 	public static int getNumberOfFiles() {
 
-		int num = 0;
+		int files = 0;
+		
 		for (Map.Entry<ID, Set<Entry>> entry : ((ChordImpl) chord).getEntries().getEntries().entrySet()) {
 			for (Entry setEntry : entry.getValue()) {
-				num++;
+				
+				
+				Metadata metadata = Metadata.createMetadata(setEntry.getValue().toString());
+				if(metadata != null) {
+					
+					if(metadata.getMetadataType().ordinal() == MetadataType.FILE.ordinal()) { 
+						files++;
+					}
+					
+				} else {
+					continue;
+				}
+
 			}
 		}		
-		System.out.println("NUMBER OF FILES: " + num);
-		return num;
+		System.out.println("NUMBER OF FILES: " + files);
+		return files;
 	}
 
 	//TODO: modificar o codigo getSize da ENTRY e meter isto tudo a devolver um tuplo para optimizar
 	public static double getNumberOfFileMBytes() {
 
 		double bytes = 0;
+		
 		for (Map.Entry<ID, Set<Entry>> entry : ((ChordImpl) chord).getEntries().getEntries().entrySet()) {
 				
 			for (Entry setEntry : entry.getValue()) {
-				if(setEntry.getValue() instanceof String) {
-					bytes += ((String) setEntry.getValue()).length();					
-				} else {
-					bytes += ((byte[]) setEntry.getValue()).length;
-				}
-				
+					Metadata metadata = Metadata.createMetadata(setEntry.getValue().toString());
+					if(metadata != null) {
+						bytes += (double) metadata.getSize();
+						
+					} else {
+						continue;
+					}
 				
 			}
 
 		}	
 
+		
 		System.out.println("NUMBER OF BYTES: " + bytes);
 
 		return bytes/(1024*1024);
