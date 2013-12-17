@@ -42,7 +42,6 @@ public class HbaseManager {
 
 	public void insert(String newData){
 
-		System.out.println("Hbase insert called!!!!");
 		String row = "1";
 		Get get = new Get(Bytes.toBytes(row));
 		boolean exists = false;
@@ -68,7 +67,6 @@ public class HbaseManager {
 
 			oldData = r.getValue(Bytes.toBytes("Peers"), Bytes.toBytes("Peer"));
 			dataString = new String(oldData);
-			System.out.println("Exists old DNS in insert: .------------>" + dataString);
 			toPut = dataString + " " + newData;
 
 		} else {
@@ -85,8 +83,6 @@ public class HbaseManager {
 
 	public void delete(String data){
 
-
-		System.out.println("Hbase delete called!!!!!");
 		String row = "1";
 		Get get = new Get(Bytes.toBytes(row));
 		boolean exists = false;
@@ -109,8 +105,6 @@ public class HbaseManager {
 
 			oldData = r.getValue(Bytes.toBytes("Peers"), Bytes.toBytes("Peer"));
 			dataString = new String(oldData);
-			System.out.println("Exists old DNS em delete: .------------>" + dataString);
-
 
 			String[] dnsPeers = dataString.split(" ");
 			String newData = "";
@@ -137,7 +131,6 @@ public class HbaseManager {
 
 	public void putToTable(String row, String family, String  qualifier, String value) throws Exception{
 
-		System.out.println("Value:" + value);
 		Put put = new Put(row.getBytes());
 		put.add(family.getBytes(), qualifier.getBytes(), value.getBytes());
 		this.table.put(put);	
@@ -146,7 +139,6 @@ public class HbaseManager {
 
 	public String get(){
 
-		System.out.println("Get function from manager is beeing called!!!");
 		String row = "1";
 		Get get = new Get(Bytes.toBytes(row));
 		boolean exists = false;
@@ -169,8 +161,6 @@ public class HbaseManager {
 
 			oldData = r.getValue(Bytes.toBytes("Peers"), Bytes.toBytes("Peer"));
 			dataString = new String(oldData);
-			System.out.println("Exists old DNS em get: .------------>" + dataString);
-
 
 		}
 
@@ -181,7 +171,6 @@ public class HbaseManager {
 
 	public void deleteAll(){
 
-		System.out.println("Hbase delete called!!!!!");
 		String row = "1";
 		Get get = new Get(Bytes.toBytes(row));
 		boolean exists = false;

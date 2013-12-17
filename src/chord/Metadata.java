@@ -39,8 +39,6 @@ public class Metadata {
 
 	public static Metadata createMetadata(String metadata) {
 
-		System.out.println("METDATA EM STRING: " + metadata);
-		
 		String [] splittedMetadata = metadata.split("\n");
 		Collection<String> files;
 		Collection<String> blocks;
@@ -76,7 +74,6 @@ public class Metadata {
 
 		} else {
 
-			System.out.println("Metadata Corrompida! (Metadata.java)");
 			return null;
 
 		}
@@ -106,7 +103,6 @@ public class Metadata {
 
 		} else {
 
-			System.out.println("getMetadata() - (Metadata.java)");
 			return null;
 
 		}

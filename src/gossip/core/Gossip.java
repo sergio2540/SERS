@@ -28,11 +28,6 @@ public class Gossip {
 	
 	private double id = 0;
 
-	
-	
-
-	
-
 	public Gossip(){}
 
 	public void initActiveNodes(double activeNodes, double activeNodesWeight){
@@ -51,7 +46,6 @@ public class Gossip {
 		this.initAverageFiles = averageFiles;
 		this.initAverageFilesWeight = averageFilesWeight;  
 
-		//nao recisa de valores de reset
 	}
 	
 	public void initAverageMb(double averageMb, double averageMbWeight){
@@ -61,9 +55,7 @@ public class Gossip {
 		
 		this.initAverageMb = averageMb;
 		this.initAverageMbWeight = averageMbWeight;
-
 		
-		//nao recisa de valores de reset
 	}
 
 	public void setQueryActiveNodesValues(double activeNodes, double activeNodesWeight) {

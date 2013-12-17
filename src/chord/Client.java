@@ -50,7 +50,8 @@ public class Client {
 	static int DNSMAX = 15;
 
 	private static Chord chord;
-	
+	final static Gossip gossip = new Gossip();
+
 	static URL localURL = null;
 
 	private static HbaseManager manager;
@@ -67,6 +68,10 @@ public class Client {
 		return result;
 
 	}
+	
+	public static Gossip getGossip() {
+		return gossip;
+	}
 
 	final protected static char[] hexArray = "0123456789ABCDEF".toCharArray();
 
@@ -80,90 +85,39 @@ public class Client {
 		}
 		return new String(hexChars);
 	}
-	
+
 	private static byte[] getMacAdress() {
-		
+
 		byte[] macInBytes = null;
-		
+
 		try {
-			
+
 			String[] command = {"/bin/sh", "-c", "ip link show eth0 | awk '/ether/ {print $2}'"};
-		    Process pid = Runtime.getRuntime().exec(command);
-		    
-		    BufferedReader in = new BufferedReader(new InputStreamReader(pid.getInputStream()));
+			Process pid = Runtime.getRuntime().exec(command);
+
+			BufferedReader in = new BufferedReader(new InputStreamReader(pid.getInputStream()));
 			macInBytes =  in.readLine().getBytes();
-			
-			
+
+
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
-	
-		return macInBytes;
-	    
-	}
 
-//	private static byte[] getMacAdress() {
-//
-//		InetAddress ip;
-//
-//		StringBuilder sb = null;
-//
-//		try {
-//
-//			ip = InetAddress.getLocalHost();
-//			//System.out.println("Current IP address : " + ip.getHostAddress());
-//			Enumeration<NetworkInterface> nets = NetworkInterface.getNetworkInterfaces();
-//			NetworkInterface netint;
-//			List<InterfaceAddress> interfaces = new ArrayList<InterfaceAddress>();
-//
-//			while(nets.hasMoreElements()) {
-//				netint = nets.nextElement();
-//				interfaces.addAll(netint.getInterfaceAddresses());
-//			}
-//
-//			//for(InterfaceAddress intAddr : interfaces){
-//			//	System.out.println("| " + intAddr.toString() + " |");
-//			//}
-//
-//			ip = InetAddress.getByAddress(interfaces.get(1).getAddress().getAddress());
-//			NetworkInterface network = NetworkInterface.getByInetAddress(ip);
-//
-//			if(network == null) {
-//				System.out.println("NULL");
-//				return "".getBytes();
-//			}
-//
-//			byte[] mac = network.getHardwareAddress();
-//
-//			sb = new StringBuilder();
-//
-//			for (int i = 0; i < mac.length; i++) {
-//				sb.append(String.format("%02X%s", mac[i], (i < mac.length - 1) ? "-" : ""));		
-//			}
-//
-//			//System.out.println(sb.toString());
-//
-//		} catch (UnknownHostException | SocketException e) {
-//			e.printStackTrace();
-//		}
-//
-//		return sb.toString().getBytes();
-//
-//	}
+		return macInBytes;
+
+	}
 
 	private static int generateRandomPort(int higher, int lower) {
 
 		Random random = new Random();
 		//numero entre 1 e higher
-		int port = lower + random.nextInt((higher - 1)  - lower) + 1;
-		System.out.println("Random port: " + port);
+		int port = lower + random.nextInt((higher-1)  - lower) + 1;
+		System.out.println("Port: " + port);
 		return port;
 
 	}
 
 	public static URL getGossipPeer() {
-
-		//System.out.println("getGossipPeer CALLED");
 
 		List<Node> nodes = new ArrayList<Node>();
 
@@ -177,8 +131,6 @@ public class Client {
 
 		chosenNode = nodes.get(index);
 
-		//System.out.println("PEER URL chosen: " + chosenNode.getNodeURL().toString());
-
 		return chosenNode.getNodeURL();
 
 	}
@@ -190,7 +142,7 @@ public class Client {
 			System.exit(1);
 		}
 
-		
+
 		manager = new HbaseManager();
 		manager.prepareDB();
 		Collection<URL> peersList = null;
@@ -200,13 +152,13 @@ public class Client {
 		String username = args[0];
 		String folder = args[1];
 		final String username2 = new String(username);
-		
+
 		//keys and contents
 		MyKey keyRoot = new MyKey("/");
 		String keyRootContent = "DIR\n";
 
 		final MyKey usersKey = new MyKey("/admin/usersKey");
-		
+
 		final MyKey activeUsersKey = new MyKey("/admin/activeUserKey");
 		final String activeUsersContent = username;
 
@@ -217,27 +169,27 @@ public class Client {
 
 		chord = new ChordImpl();
 		String protocol = URL.KNOWN_PROTOCOLS.get(URL.SOCKET_PROTOCOL);
-		
+
 		final int port = generateRandomPort(HIGHPORT, LOWPORT);
 		try {
 			//TODO: trocar localhost para ip da maquina
-			
+
 			InetAddress myself = null;
 			try {
 				myself = InetAddress.getLocalHost();
 			} catch (UnknownHostException e) {
 				e.printStackTrace();
 			}
-					System.out.println(myself.getHostAddress());
 			
-			localURL = new URL(protocol + "://" + "localhost" + ":" + port + "/");
+			System.out.println(myself.getHostAddress());
+
+			localURL = new URL(protocol + "://" + myself.getHostAddress() + ":" + port + "/");
 
 		} catch(MalformedURLException e) {
 			System.out.println(e.getMessage());
 			System.exit(1);
 		}
 
-		//pode devolver NULL
 		byte[] mac = getMacAdress();
 
 		if(mac == null) {
@@ -248,19 +200,16 @@ public class Client {
 		if(username.equals("superadmin")) {
 
 			try {
-				
+
 				ByteArrayOutputStream macAndUser = new ByteArrayOutputStream();
 				macAndUser.write(mac);
 				macAndUser.write(username.getBytes());
 				chord.create(localURL, new ID(getSHA1(macAndUser.toByteArray())));
-				System.out.println("Create executed!");
+				System.out.println("DHT created");
 				manager.prepareDB();
 				manager.insert(protocol + "://" + localURL.getHost() + ":" + localURL.getPort() + "/");
 				manager.cleanUp();
 				peersFile = new PeersFile("peers");
-				//peersList = peersFile.getPeersList();
-				//peersFile.prependPeerToPeerList(localURL);
-				//peersFile.save();
 				while(true);
 			} catch (ServiceException e) {
 				e.printStackTrace();
@@ -269,19 +218,13 @@ public class Client {
 			}
 
 		}
-		
+
 		peersFile = new PeersFile("peers");
 		peersList = peersFile.getPeersList();
-
-		if(peersList.isEmpty()) {
-			System.out.println("PeersList empty!");
-		}
 
 		for(URL url : peersList) {
 			try {
 
-				System.out.println(url.getHost() + url.getPort());
-				
 				ByteArrayOutputStream macAndUser = new ByteArrayOutputStream();
 				macAndUser.write(mac);
 				macAndUser.write(username.getBytes());
@@ -290,44 +233,32 @@ public class Client {
 
 				chord.insert(usersKey, username);
 
-				final Gossip gossip = new Gossip();		
-
 				if(username.equals("admin")) {
 
 					boolean firstTime = false;
 					Set<Serializable> data = chord.retrieve(keyRoot);
 					firstTime = data.isEmpty();
 
-					
-					
-					//if(firstTime) {
-					
-				
-					
 					gossip.initActiveNodes(1,1);
-					
+
 					gossip.initAverageFiles(getNumberOfFiles(), 1);
 					gossip.initAverageMb(getNumberOfFileMBytes(), 1);
-					
-					
+
+
 					chord.insert(keyRoot, keyRootContent);
-					//} else {
 					manager.prepareDB();
 					manager.insert(protocol + "://" +localURL.getHost() + ":" + localURL.getPort() + "/");
 					manager.cleanUp();
-					
-					//gossip.setValues(1, 1, 1, 1, 9, 1, (double)Integer.parseInt(args[2]), 1);//os dois ultimos deviam ser os tamanhos dos ficheiros	
-					//}
 
 
 				} else {
-					
+
 					gossip.initActiveNodes(1, 0);
-					
-					
+
+
 					gossip.initAverageFiles(getNumberOfFiles(), 1);
 					gossip.initAverageMb(getNumberOfFileMBytes(), 1);
-					
+
 				}
 
 				Thread udpReceiverThread = new Thread(new Runnable(){	
@@ -353,56 +284,43 @@ public class Client {
 
 										ObjectInputStream inFromClient = null;
 										try {
-											
-											
+
+
 											Message message;
 											inFromClient = new ObjectInputStream(connectionSocket.getInputStream());
 
-											//DataOutputStream outToClient = new DataOutputStream(connectionSocket.getOutputStream());
 											message = (Message) inFromClient.readObject();
 											gossip.processMessage(message);
-											System.out.println("MESSAGE RECEIVED: " + message.toString());
-
 
 											inFromClient = new ObjectInputStream(connectionSocket.getInputStream());
 											message = (Message) inFromClient.readObject();
 											gossip.processMessage(message);
-											System.out.println("MESSAGE RECEIVED: " + message.toString());
 
 											inFromClient = new ObjectInputStream(connectionSocket.getInputStream());
 											message = (Message) inFromClient.readObject();
 											gossip.processMessage(message);
-											System.out.println("MESSAGE RECEIVED: " + message.toString());
-											
+
 
 										} catch (IOException e) {
-											e.printStackTrace();
-											System.out.println("CATCH SENDER 1");
+											//System.out.println(e.getMessage());
 										} catch (ClassNotFoundException e) {
-											e.printStackTrace();
-											System.out.println("CATCH SENDER 2");
+											//System.out.println(e.getMessage());
 										}
 									}
 
 								});
 
 								clientAcceptThread.start();
-											
-							} catch (SocketException e) {
-								//System.out.println("CATCH SENDER 3");
-								//e.printStackTrace();
-							} catch (UnknownHostException e) {
-								//System.out.println("CATCH SENDER 4");
-								//e.printStackTrace();
-							} catch (IOException e) {
-								//System.out.println("CATCH SENDER 5");
-								//e.printStackTrace();
-							} finally {
-								//System.out.println("FINALLY");
-								//socket.close();
-							}
-						}
 
+							} catch (SocketException e) {
+								//System.out.println(e.getMessage());
+							} catch (UnknownHostException e) {
+								//System.out.println(e.getMessage());
+							} catch (IOException e) {
+								//System.out.println(e.getMessage());
+							}
+
+						}
 
 					}
 				});
@@ -412,82 +330,65 @@ public class Client {
 				Thread udpSender = new Thread(new Runnable(){
 
 					@Override
-					public void run(){ //tenho ip porta
+					public void run(){
 
 						Socket clientSocket = null;
-						
+
 						int round = 0;
-						
+
 						while(true) {
 
-							
+
 							try {
-								
+
 								if(username2.equals("admin") && (round%20==0)){
 									gossip.resetAll();
 									gossip.newGossipRound();
-									System.out.println("REINICIOU");
+									System.out.println("REINICIOU GOSSIP");
 								}
-								
+
 								URL url = getGossipPeer();
 								clientSocket = new Socket(url.getHost(), url.getPort() + 1);
-								
-								System.out.println("DEPOIS DO SOCKET NO RECEIVER");
-								
+
 								if(clientSocket.isConnected()) {
-									System.out.println("CLIENT SOCKET IS CONNECTED");
+									//System.out.println("CLIENT SOCKET IS CONNECTED");
 								} else {
-									System.out.println("CLIENT SOCKET IS NOT CONNECTED");
+									//System.out.println("CLIENT SOCKET IS NOT CONNECTED");
 									continue;
 								}
-								
+
 								List<Message> messages = new ArrayList<Message>();
 								messages.add(gossip.getMessage(MessageType.Q1));
 								messages.add(gossip.getMessage(MessageType.Q3));
 								messages.add(gossip.getMessage(MessageType.Q4));	
-								
-								
-								
-									//Message msg  = gossip.getLogOutMessage(MessageType.Q3);
-									
-									//ObjectOutputStream outToServer = new ObjectOutputStream(clientSocket.getOutputStream());
-									//outToServer.writeObject(msg);
-						
-								for(Message msg : messages){
 
-									System.out.println("MESSAGE SENT: " + msg.toString());
+								for(Message msg : messages){
 
 									ObjectOutputStream outToServer = new ObjectOutputStream(clientSocket.getOutputStream());
 									outToServer.writeObject(msg);
 
 								}
-								
+
 								System.out.println("");
 								System.out.println("");
-								
+
 								System.out.println("GOSSIP 1 AVERAGE: " + gossip.average(MessageType.Q1));
 								System.out.println("GOSSIP 3 AVERAGE: " + gossip.average(MessageType.Q3));
 								System.out.println("GOSSIP 4 AVERAGE: " + gossip.average(MessageType.Q4));
-								
+
 								System.out.println("");
 								System.out.println("");
 
-								
-								
 								clientSocket.close();
 
 							} catch (Exception e) {
-								System.out.println("CATCH DO RECEIVER");
-								//e.printStackTrace();	
-							} finally {
-								//System.out.println("FINALLY");
-							}
-							
+								//System.out.println(e.getMessage());	
+							} 
+
 							try {
 								Thread.sleep(1000);
 							} catch (InterruptedException e) {
-								// TODO Auto-generated catch block
-								e.printStackTrace();
+								//System.out.println(e.getMessage());	
 							}
 							round++;
 
@@ -503,92 +404,79 @@ public class Client {
 
 					@Override
 					public void run(){ 
-						
+
 						int round = 1;
-						
+
 						while(true) {
 
-							
+
 							try {
-								
+
 								if(username2.equals("admin") && (round%20==0)){
 
-									System.out.println("ADMIN REINICIA COUNT E VISUALIZA SETS");
-									
 									Set<Serializable> activeUsersSet = chord.retrieve(activeUsersKey);
 									Set<String> activeUsers = new HashSet<String>();
 									int count = 0;
-									
+
 									String[] parsedSet;
 									String bestPeers = "";
-									
+
 									manager.prepareDB();
 									manager.deleteAll();
-									
+
 									for(Serializable ser : activeUsersSet) {
-										
+
 										chord.remove(activeUsersKey, ser);
-										
-										
+
+
 										parsedSet = ser.toString().split(" ");
 										activeUsers.add(parsedSet[0]);
-										
+
 										if(count < DNSMAX) {
 											manager.insert(parsedSet[1]);
 										}
-										
+
 										count++;
-										
-										//System.err.println("ACTIVE USERS: " + ser.toString());
+
 									}
-									
+
 									try {
 										manager.cleanUp();
 									} catch (IOException e) {
 										e.printStackTrace();
 									}
-									
-									System.err.println("COUNT ACTIVE USERS: " + activeUsers.size());
-									
+
+									System.out.println("COUNT ACTIVE USERS: " + activeUsers.size());
+
 									chord.insert(activeUsersKey, username2 + " " + localURL.getProtocol() + "://" + 
 											localURL.getHost() + ":" + localURL.getPort() + "/");
-									
+
 									//visualização do set de users totais na rede
-									
 									Set<Serializable> usersSet = chord.retrieve(usersKey);
-									
-									for(Serializable ser : usersSet) {
-										
-										//System.err.println("USERS: " + ser.toString());
-										
-									}
-									
-									System.err.println("COUNT USERS: " + usersSet.size());
-									
-									
+
+									System.out.println("COUNT USERS: " + usersSet.size());
+
+
 								} else {
-									
+
 									chord.insert(activeUsersKey, activeUsersContent + " " + localURL.getProtocol() + "://" + 
-									localURL.getHost() + ":" + localURL.getPort() + "/");
-									
+											localURL.getHost() + ":" + localURL.getPort() + "/");
+
 								}
-								
+
 								Thread.sleep(1000);
-								
-								
+
+
 								round++; 
 
 							} catch (Exception e) {
-								System.out.println("CATCH DO RECEIVER");
-								//e.printStackTrace();	
-							} finally {
-								//System.out.println("FINALLY");
+								//System.out.println(e.getMessage());
 							}
-							
+
 							try {
 								Thread.sleep(1000);
 							} catch (InterruptedException e) {
-								e.printStackTrace();
+								//System.out.println(e.getMessage());	
 							}
 
 						}
@@ -599,87 +487,73 @@ public class Client {
 
 				activeUsersUpdater.start();				
 
+				//BREAK!?!?
 				break; //sai da lista de peers se conseguir fazer join
 
 			} catch (ServiceException e) {
-				e.printStackTrace();
+				//System.out.println(e.getMessage());	
 				peersToBeRemoved.add(url);
 			} catch (Exception e) {
-				e.printStackTrace();
-				System.out.println(e.getMessage());
+				//System.out.println(e.getMessage());	
 			}
 
 		}
 
 		peersFile.removePeersInPeersList(peersToBeRemoved);
 		int peersInList = peersList.size();
-		//System.out.println("PEERS IN THE LIST OF PEERS" + peersInList);
 
 		peersFile.prependPeerToPeerList(localURL);
 		peersFile.save();
 
-		//verfica se tem que ir buscar mais ips ao "DNS"
-//		if(peersInList < 2/3 * N) {
-//			System.out.println("peersInList < 2");
-//			peersFile.getPeersList().clear();//???????????????????????????????????????????????????
-//			peersFile.save();
-//			peersFile.getPeersFromDB();
-//
-//			//chama funcao que faz download do ficheiro peers global
-//		}
-		
+
 		Fs fs = Fs.initializeFuse(chord, folder, false, localURL, manager, peersFile);
 
 	}
 
-
 	public static int getNumberOfFiles() {
 
 		int files = 0;
-		
+
 		for (Map.Entry<ID, Set<Entry>> entry : ((ChordImpl) chord).getEntries().getEntries().entrySet()) {
 			for (Entry setEntry : entry.getValue()) {
-				
-				
+
+
 				Metadata metadata = Metadata.createMetadata(setEntry.getValue().toString());
 				if(metadata != null) {
-					
+
 					if(metadata.getMetadataType().ordinal() == MetadataType.FILE.ordinal()) { 
 						files++;
 					}
-					
+
 				} else {
 					continue;
 				}
 
 			}
 		}		
-		System.out.println("NUMBER OF FILES: " + files);
+
 		return files;
+
 	}
 
-	//TODO: modificar o codigo getSize da ENTRY e meter isto tudo a devolver um tuplo para optimizar
 	public static double getNumberOfFileMBytes() {
 
 		double bytes = 0;
-		
+
 		for (Map.Entry<ID, Set<Entry>> entry : ((ChordImpl) chord).getEntries().getEntries().entrySet()) {
-				
+
 			for (Entry setEntry : entry.getValue()) {
-					Metadata metadata = Metadata.createMetadata(setEntry.getValue().toString());
-					if(metadata != null) {
-						bytes += (double) metadata.getSize();
-						
-					} else {
-						continue;
-					}
-				
+				Metadata metadata = Metadata.createMetadata(setEntry.getValue().toString());
+				if(metadata != null) {
+					bytes += (double) metadata.getSize();
+
+				} else {
+					continue;
+				}
+
 			}
 
 		}	
-
-		
-		System.out.println("NUMBER OF BYTES: " + bytes);
 
 		return bytes/(1024*1024);
 

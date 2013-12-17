@@ -4,7 +4,4 @@ public enum MetadataType {
 
 	DIR, FILE 
 	
-	
-
-	
 }

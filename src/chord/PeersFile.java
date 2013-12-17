@@ -38,8 +38,6 @@ public class PeersFile {
 
 	}
 
-
-
 	public PeersFile(String path) {
 		this.path = path;
 		this.file = new File(path);
@@ -60,7 +58,6 @@ public class PeersFile {
 		String urls = manager.get();
 		
 		if(urls == null) {
-			System.out.println("URLS = NULL");
 			return;
 		}
 
@@ -81,7 +78,6 @@ public class PeersFile {
 				fos.close();
 
 			} catch (IOException e) {
-				System.out.println("Eror while writing to peers file " + e.getMessage());
 			}
 
 		}
@@ -189,7 +185,6 @@ public class PeersFile {
 
 			while((line = bufferedReader.readLine()) != null){
 
-				System.out.println("URL: " + "|" + line + "|");
 				urls.add(new URL(line));
 
 			}
@@ -223,12 +218,10 @@ public class PeersFile {
 		return this.peersList;
 	}
 
-	//retorna true se sucesso e retorna false se nao teve
 	public boolean removePeersInPeersList(Collection<URL> urlsToRemove) {
 		return peersList.removeAll(urlsToRemove);
 	}
 
-	//retorna true se sucesso e retorna false se nao teve
 	public boolean appendPeersToPeersList(Collection<URL> urlsToAdd) {
 		return peersList.addAll(urlsToAdd);
 	}
